@@ -23,13 +23,16 @@
  *     eliminates the entire class of "stale snapshot" hallucination bugs.
  */
 
-const { getScriptForLanguage, getBaseLanguage } = require('../i18n/languageRegistry');
+const {
+  getScriptForLanguage,
+  getBaseLanguage,
+} = require("../i18n/languageRegistry");
 
 // ---------------------------------------------------------------------------
 // Default persona name — short, easy to pronounce in any language.
 // Override per-agent via `agent.assistantName`.
 // ---------------------------------------------------------------------------
-const DEFAULT_ASSISTANT_NAME = 'Maya';
+const DEFAULT_ASSISTANT_NAME = "Maya";
 
 // ---------------------------------------------------------------------------
 // Section Builders
@@ -41,8 +44,9 @@ const DEFAULT_ASSISTANT_NAME = 'Maya';
  * supplied, so name/voice identity stays consistent for every agent.
  */
 function buildIdentitySection(agent) {
-  const name         = (agent && agent.assistantName) || DEFAULT_ASSISTANT_NAME;
-  const businessPart = agent && agent.businessName ? ` for ${agent.businessName}` : '';
+  const name = (agent && agent.assistantName) || DEFAULT_ASSISTANT_NAME;
+  const businessPart =
+    agent && agent.businessName ? ` for ${agent.businessName}` : "";
 
   const personaAnchor =
     `You are ${name}, a warm, empathetic, and professional Virtual Citizen Assistant${businessPart}, speaking live to a citizen. ` +
@@ -114,8 +118,21 @@ CORRECT EXAMPLES:
 /**
  * CONVERSATION STYLE — voice vs chat, pacing, artifacts.
  */
-function buildConversationStyle(agent, channel = 'voice') {
-  if (channel === 'text' || channel === 'chat') {
+function buildConversationStyle(agent, channel = "voice") {
+  if (channel === "whatsapp") {
+    let section = `CONVERSATION STYLE (WHATSAPP TEXT)
+
+- Send concise, self-contained text messages that are easy to read on a phone.
+- Use plain text, short paragraphs, and simple numbered lists when giving choices or steps.
+- Ask only one question at a time. Keep the user's language and digital literacy in mind.
+- Never refer to a screen, card, carousel, button, or content displayed elsewhere.`;
+    if (agent && agent.tone) {
+      section += `\n- Tone directive: ${agent.tone}`;
+    }
+    return section;
+  }
+
+  if (channel === "text" || channel === "chat") {
     let section = `CONVERSATION STYLE (CHAT)
 
 - You are interacting in a rich text chat interface.
@@ -160,13 +177,33 @@ STEP-BY-STEP GUIDANCE RULES:
 }
 
 /**
+ * WhatsApp has no citizen-chat UI for rendering frontend artifacts. Keep all
+ * guidance in the message body and make channel limitations explicit.
+ */
+function buildWhatsAppChannelRules(channel) {
+  if (channel !== "whatsapp") return null;
+
+  return `WHATSAPP OUTPUT RULES — OVERRIDE ANY CONFLICTING INSTRUCTIONS ABOVE
+
+- WhatsApp recipients receive message text, not this application's interactive UI. NEVER emit artifact tags or payloads such as [POLL: ...], [MAP: ...], [DOCUMENTS: ...], artifact-scheme-card, artifact-step-walkthrough, JSON intended for a card, or instructions that a card/carousel/guide is shown above.
+- No hero cards. No card-style summary. Do not write “Here is the scheme card”, “Here is the step-by-step guide shown above”, or any other card-like text that implies a visual hero card or carousel is being displayed. The reply itself must be the substance.
+- Give the useful information directly in the WhatsApp reply. Use short numbered lists for choices, matching schemes, required documents, and application steps. Do not say “tap”, “click”, “shown above”, or “displayed”.
+- For scheme overview or “How to apply” questions, do not phrase the answer as a hero card, banner, or a UI message. Keep it as plain text: scheme name, one-line summary, key benefits, and the next action. Never say “Here is the step-by-step guide for [Scheme Name]” as if a guide card appeared on-screen.
+- Use the available tools for current scheme facts, eligibility, and application steps. After a tool returns, summarize only facts present in its result; include names, descriptions, benefits, matched criteria, exclusions, documents, steps, and official URLs when those fields are provided. Never guess missing data.
+- For scheme search and general eligibility results, list the most relevant returned schemes as concise numbered text entries. If there are more results than fit in a short message, give a few and ask whether the user wants more. Keep eligibility wording preliminary and tied to the tool result.
+- For application guidance, call get_application_steps and then share the returned steps as numbered text, including official action URLs and relevant tips or warnings when present. If the tool has no steps, say so and offer the official portal link only if the tool returned one.
+- This guidance flow has no tool for sending scheme images as WhatsApp media. Do not claim an image was sent and do not invent image links. If an actual image/media-sending tool is explicitly available in the current tool list, use it only when relevant; otherwise provide the available information as text.
+- Use plain text with simple bullets or numbering. Avoid markdown tables, code blocks, and fabricated map coordinates. For nearby locations, share a Google Maps search URL using the facility type and a known user location only; ask for their city/area if it is not known.`;
+}
+
+/**
  * Resolves a BCP-47 language code to a human-readable name using platform
  * locale data, so any language code works without a hardcoded lookup table.
  */
 function getLanguageDisplayName(langCode) {
   try {
-    const dn   = new Intl.DisplayNames(['en'], { type: 'language' });
-    const base = (langCode || '').split('-')[0];
+    const dn = new Intl.DisplayNames(["en"], { type: "language" });
+    const base = (langCode || "").split("-")[0];
     return dn.of(base) || langCode;
   } catch (e) {
     return langCode;
@@ -179,86 +216,93 @@ function getLanguageDisplayName(langCode) {
  * tool ARGUMENTS must always be English even when speech is in another language.
  */
 function buildLanguageSection(agent) {
-  const lang      = ((agent && agent.language) || 'en-US').trim();
-  const isEnglish = lang.toLowerCase().startsWith('en');
+  const lang = ((agent && agent.language) || "en-US").trim();
+  const isEnglish = lang.toLowerCase().startsWith("en");
   if (isEnglish) return null;
 
   const langName = getLanguageDisplayName(lang);
-  const script   = getScriptForLanguage(lang);
+  const script = getScriptForLanguage(lang);
   const baseLang = getBaseLanguage(lang);
 
   const scriptRules = {
     Devanagari: {
-      name: 'Devanagari',
-      examples: 'सॉरी, ओके, हाय, हेलो, बुकिंग, स्लॉट, चेक, डॉक्टर, अपॉइंटमेंट',
-      forbidden: 'Hinglish',
-      wrongExample: 'Aapka slot book ho gaya',
-      correctExample: 'आपका स्लॉट बुक हो गया',
-      selfCheck: 'Does my output contain any a-z or A-Z characters?',
+      name: "Devanagari",
+      examples: "सॉरी, ओके, हाय, हेलो, बुकिंग, स्लॉट, चेक, डॉक्टर, अपॉइंटमेंट",
+      forbidden: "Hinglish",
+      wrongExample: "Aapka slot book ho gaya",
+      correctExample: "आपका स्लॉट बुक हो गया",
+      selfCheck: "Does my output contain any a-z or A-Z characters?",
     },
     Tamil: {
-      name: 'Tamil',
-      examples: 'சரி, ஓகே, ஹாய், ஹெலோ, புக்கிங், ச்லாட், செக், டாக்டர், அப்பாயிண்ட்‌மென்ட்',
-      forbidden: 'Tanglish',
-      wrongExample: 'Nee booking panniya',
-      correctExample: 'நீ புக்கிங் பண்ணிய',
-      selfCheck: 'Does my output contain any a-z or A-Z characters?',
+      name: "Tamil",
+      examples:
+        "சரி, ஓகே, ஹாய், ஹெலோ, புக்கிங், ச்லாட், செக், டாக்டர், அப்பாயிண்ட்‌மென்ட்",
+      forbidden: "Tanglish",
+      wrongExample: "Nee booking panniya",
+      correctExample: "நீ புக்கிங் பண்ணிய",
+      selfCheck: "Does my output contain any a-z or A-Z characters?",
     },
     Telugu: {
-      name: 'Telugu',
-      examples: 'సరి, ఓకే, హాయి, హెల్లో, బుకింగ్, స్లోట్, чеక్, డాక్టర్, అపాయింట్‌మెంట్',
-      forbidden: 'Teluglish',
-      wrongExample: 'Neevu booking chesaru',
-      correctExample: 'నీవు బుకింగ్ చేశారు',
-      selfCheck: 'Does my output contain any a-z or A-Z characters?',
+      name: "Telugu",
+      examples:
+        "సరి, ఓకే, హాయి, హెల్లో, బుకింగ్, స్లోట్, чеక్, డాక్టర్, అపాయింట్‌మెంట్",
+      forbidden: "Teluglish",
+      wrongExample: "Neevu booking chesaru",
+      correctExample: "నీవు బుకింగ్ చేశారు",
+      selfCheck: "Does my output contain any a-z or A-Z characters?",
     },
     Bengali: {
-      name: 'Bengali',
-      examples: 'ঠিক আছে, ওকে, হাই, হ্যালো, বুকিং, স্লট, চেক, ডাক্তার, অ্যাপয়েন্টমেন্ট',
-      forbidden: 'Benglish',
-      wrongExample: 'Tumi booking korcho',
-      correctExample: 'তুমি বুকিং করছ',
-      selfCheck: 'Does my output contain any a-z or A-Z characters?',
+      name: "Bengali",
+      examples:
+        "ঠিক আছে, ওকে, হাই, হ্যালো, বুকিং, স্লট, চেক, ডাক্তার, অ্যাপয়েন্টমেন্ট",
+      forbidden: "Benglish",
+      wrongExample: "Tumi booking korcho",
+      correctExample: "তুমি বুকিং করছ",
+      selfCheck: "Does my output contain any a-z or A-Z characters?",
     },
     Gujarati: {
-      name: 'Gujarati',
-      examples: 'સરુ, ઓકે, હાય, હેલો, બુકિંગ, સ્લોટ, ચેક, ડૉક્ટર, એપોઈન્ટમેન્ટ',
-      forbidden: 'Gujlish',
-      wrongExample: 'Tame booking karyu',
-      correctExample: 'તમે બુકિંગ કર્યું',
-      selfCheck: 'Does my output contain any a-z or A-Z characters?',
+      name: "Gujarati",
+      examples: "સરુ, ઓકે, હાય, હેલો, બુકિંગ, સ્લોટ, ચેક, ડૉક્ટર, એપોઈન્ટમેન્ટ",
+      forbidden: "Gujlish",
+      wrongExample: "Tame booking karyu",
+      correctExample: "તમે બુકિંગ કર્યું",
+      selfCheck: "Does my output contain any a-z or A-Z characters?",
     },
     Kannada: {
-      name: 'Kannada',
-      examples: 'ಸರಿ, ಓಕೆ, ಹಾಯ್, హెలლო, ಬುಕಿಂಗ್, ಸ್ಲಾಟ್, ಚೆಕ್, ಡಾಕ್ಟರ್, ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್',
-      forbidden: 'Kanglish',
-      wrongExample: 'Neevu booking maadideera',
-      correctExample: 'ನೀವು ಬುಕಿಂಗ್ ಮಾಡಿದೀರಿ',
-      selfCheck: 'Does my output contain any a-z or A-Z characters?',
+      name: "Kannada",
+      examples:
+        "ಸರಿ, ಓಕೆ, ಹಾಯ್, హెలლო, ಬುಕಿಂಗ್, ಸ್ಲಾಟ್, ಚೆಕ್, ಡಾಕ್ಟರ್, ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್",
+      forbidden: "Kanglish",
+      wrongExample: "Neevu booking maadideera",
+      correctExample: "ನೀವು ಬುಕಿಂಗ್ ಮಾಡಿದೀರಿ",
+      selfCheck: "Does my output contain any a-z or A-Z characters?",
     },
     Malayalam: {
-      name: 'Malayalam',
-      examples: 'ശരി, ഒകേ, ഹായ്, ഹെലോ, ബുക്കിംഗ്, സ്ലോട്ട്, ചെക്ക്, ഡോക്ടർ, അപോയിന്റ്മെന്റ്',
-      forbidden: 'Manglish',
-      wrongExample: 'Ningal booking cheythu',
-      correctExample: 'നിങ്ങൾ ബുക്കിംഗ് ചെയ്തു',
-      selfCheck: 'Does my output contain any a-z or A-Z characters?',
+      name: "Malayalam",
+      examples:
+        "ശരി, ഒകേ, ഹായ്, ഹെലോ, ബുക്കിംഗ്, സ്ലോട്ട്, ചെക്ക്, ഡോക്ടർ, അപോയിന്റ്മെന്റ്",
+      forbidden: "Manglish",
+      wrongExample: "Ningal booking cheythu",
+      correctExample: "നിങ്ങൾ ബുക്കിംഗ് ചെയ്തു",
+      selfCheck: "Does my output contain any a-z or A-Z characters?",
     },
     Gurmukhi: {
-      name: 'Gurmukhi',
-      examples: 'ਠੀਕ ਹੈ, ਓਕੇ, ਹਾਇ, ਹੈਲੋ, ਬੁੱਕਿੰਗ, ਸਲਾਟ, ਚੈੱਕ, ਡਾਕਟਰ, ਅਪਾਇੰਟਮੈਂਟ',
-      forbidden: 'Punglish',
-      wrongExample: 'Tusi booking kiti',
-      correctExample: 'ਤੁਸੀਂ ਬੁੱਕਿੰਗ ਕੀਤੀ',
-      selfCheck: 'Does my output contain any a-z or A-Z characters?',
+      name: "Gurmukhi",
+      examples:
+        "ਠੀਕ ਹੈ, ਓਕੇ, ਹਾਇ, ਹੈਲੋ, ਬੁੱਕਿੰਗ, ਸਲਾਟ, ਚੈੱਕ, ਡਾਕਟਰ, ਅਪਾਇੰਟਮੈਂਟ",
+      forbidden: "Punglish",
+      wrongExample: "Tusi booking kiti",
+      correctExample: "ਤੁਸੀਂ ਬੁੱਕਿੰਗ ਕੀਤੀ",
+      selfCheck: "Does my output contain any a-z or A-Z characters?",
     },
     Oriya: {
-      name: 'Odia',
-      examples: 'ଠିକ୍ ଅଛି, ଓକେ, ହାଇ, ହେଲୋ, ବୁକିଂ, ସ୍ଲଟ୍, ଚେକ୍, ଡାକ୍ତର, ଅପଏଇଣ୍ଟମେଣ୍ଟ',
-      forbidden: 'Odia+English mixing',
-      wrongExample: 'Tuma booking karila',
-      correctExample: 'ତୁମ ବୁକିଂ କରିଲା',
-      selfCheck: 'Does my output contain any a-z or A-Z characters?',
+      name: "Odia",
+      examples:
+        "ଠିକ୍ ଅଛି, ଓକେ, ହାଇ, ହେଲୋ, ବୁକିଂ, ସ୍ଲଟ୍, ଚେକ୍, ଡାକ୍ତର, ଅପଏଇଣ୍ଟମେଣ୍ଟ",
+      forbidden: "Odia+English mixing",
+      wrongExample: "Tuma booking karila",
+      correctExample: "ତୁମ ବୁକିଂ କରିଲା",
+      selfCheck: "Does my output contain any a-z or A-Z characters?",
     },
   };
 
@@ -298,11 +342,11 @@ If YES — rewrite it entirely in ${scriptRule.name} before sending.`;
  * DATA COLLECTION FLOW — injected only when the agent has fields to collect.
  */
 function buildDataCollectionSection(agent) {
-  const fields = (agent && (agent.dataToCollect || agent.dataCollection));
+  const fields = agent && (agent.dataToCollect || agent.dataCollection);
   if (!fields || fields.length === 0) return null;
 
   const fieldList = Array.isArray(fields)
-    ? fields.map(f => (typeof f === 'string' ? f : f.label)).join(', ')
+    ? fields.map((f) => (typeof f === "string" ? f : f.label)).join(", ")
     : String(fields);
 
   return `DATA COLLECTION FLOW
@@ -332,7 +376,9 @@ function buildGuidelinesSection(agent) {
 
 function buildGoalsSection(agent) {
   if (!agent || !agent.goals || agent.goals.length === 0) return null;
-  const goalsList = Array.isArray(agent.goals) ? agent.goals.join('\n- ') : agent.goals;
+  const goalsList = Array.isArray(agent.goals)
+    ? agent.goals.join("\n- ")
+    : agent.goals;
   return `GOALS\nPrimary goals for this call:\n- ${goalsList}`;
 }
 
@@ -343,7 +389,9 @@ function buildInstructionsSection(agent) {
 
 function buildRulesSection(agent) {
   if (!agent || !agent.rules || agent.rules.length === 0) return null;
-  const rulesList = Array.isArray(agent.rules) ? agent.rules.join('\n- ') : agent.rules;
+  const rulesList = Array.isArray(agent.rules)
+    ? agent.rules.join("\n- ")
+    : agent.rules;
   return `RULES\n- ${rulesList}`;
 }
 
@@ -353,26 +401,26 @@ function buildRulesSection(agent) {
  */
 function buildAutomatedConfirmationsSection(agent) {
   if (!agent) return null;
-  
+
   const enableEmail = agent.enableEmailConfirmation;
   const enableWhatsApp = agent.enableWhatsAppConfirmation;
-  
+
   if (!enableEmail && !enableWhatsApp) return null;
-  
+
   let section = `AUTOMATED CONFIRMATIONS\n\n`;
   section += `You are configured to automatically send confirmations after successfully assisting a user.\n`;
   section += `Once you have fully resolved the user's request (e.g. after booking an appointment or answering their primary question), you MUST:\n`;
-  
+
   if (enableWhatsApp) {
     section += `- Call the [TOOL: send_whatsapp] tool to send a summary or confirmation receipt to their phone number. Ensure you have collected their phone number via save_collected_data first.\n`;
   }
-  
+
   if (enableEmail) {
     section += `- Call the [TOOL: send_followup_email] tool to send a summary or confirmation receipt to their email address. Ensure you have collected their email via save_collected_data first.\n`;
   }
-  
+
   section += `\nDo this immediately before concluding the call.`;
-  
+
   return section;
 }
 
@@ -392,37 +440,50 @@ function buildAutomatedConfirmationsSection(agent) {
  * The `availability` and `bookings` params are kept for API backwards-compat
  * but are intentionally unused.
  */
-function buildTemporalContextSection(timezone, _availability = null, _bookings = [], _agent = null) {
-  const tz  = timezone || 'UTC';
+function buildTemporalContextSection(
+  timezone,
+  _availability = null,
+  _bookings = [],
+  _agent = null,
+) {
+  const tz = timezone || "UTC";
   const now = new Date();
 
   // Formatted date string
   let currentDateStr = now.toUTCString();
   try {
-    currentDateStr = new Intl.DateTimeFormat('en-US', {
-      timeZone : tz,
-      weekday  : 'long',
-      year     : 'numeric',
-      month    : 'long',
-      day      : 'numeric',
-      hour     : 'numeric',
-      minute   : 'numeric',
-      hour12   : true,
+    currentDateStr = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz,
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+      hour12: true,
     }).format(now);
-  } catch (e) { /* fallback already set */ }
+  } catch (e) {
+    /* fallback already set */
+  }
 
   // Timezone offset string for ISO 8601 tool arguments
-  let tzOffsetStr = 'Z';
+  let tzOffsetStr = "Z";
   try {
-    const utcMs   = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' })).getTime();
-    const localMs = new Date(now.toLocaleString('en-US', { timeZone: tz   })).getTime();
-    const diffMs  = localMs - utcMs;
-    const sign    = diffMs >= 0 ? '+' : '-';
-    const absMs   = Math.abs(diffMs);
-    const h       = String(Math.floor(absMs / 3600000)).padStart(2, '0');
-    const m       = String(Math.floor((absMs % 3600000) / 60000)).padStart(2, '0');
-    tzOffsetStr   = `${sign}${h}:${m}`;
-  } catch (e) { /* fallback Z */ }
+    const utcMs = new Date(
+      now.toLocaleString("en-US", { timeZone: "UTC" }),
+    ).getTime();
+    const localMs = new Date(
+      now.toLocaleString("en-US", { timeZone: tz }),
+    ).getTime();
+    const diffMs = localMs - utcMs;
+    const sign = diffMs >= 0 ? "+" : "-";
+    const absMs = Math.abs(diffMs);
+    const h = String(Math.floor(absMs / 3600000)).padStart(2, "0");
+    const m = String(Math.floor((absMs % 3600000) / 60000)).padStart(2, "0");
+    tzOffsetStr = `${sign}${h}:${m}`;
+  } catch (e) {
+    /* fallback Z */
+  }
 
   return `CURRENT DATE & TIME
 Right now: ${currentDateStr}
@@ -469,7 +530,13 @@ Once the caller's primary request is successfully completed, or if they called b
  * @param {Array}    [opts.bookings]    - Kept for API compat; intentionally unused
  * @returns {string} Complete system prompt
  */
-function buildAgentPrompt({ agent, timezone, channel = 'voice', availability = null, bookings = [] }) {
+function buildAgentPrompt({
+  agent,
+  timezone,
+  channel = "voice",
+  availability = null,
+  bookings = [],
+}) {
   const sections = [
     buildIdentitySection(agent),
     buildToolAndConfirmationRules(agent),
@@ -483,9 +550,10 @@ function buildAgentPrompt({ agent, timezone, channel = 'voice', availability = n
     buildAutomatedConfirmationsSection(agent),
     buildTemporalContextSection(timezone, availability, bookings, agent),
     buildClosingSection(),
+    buildWhatsAppChannelRules(channel),
   ];
 
-  return sections.filter(Boolean).join('\n\n---\n\n');
+  return sections.filter(Boolean).join("\n\n---\n\n");
 }
 
 module.exports = {
@@ -505,9 +573,9 @@ module.exports = {
   buildClosingSection,
   // Legacy exports kept for backward compat
   buildToolCallingProtocol: buildToolAndConfirmationRules,
-  buildAntiAssumptionRules: () => '',
-  buildFriendlyConfirmationProtocol: () => '',
+  buildAntiAssumptionRules: () => "",
+  buildFriendlyConfirmationProtocol: () => "",
   buildVoicePersonaSection: buildConversationStyle,
-  buildBehaviorSection    : buildLanguageSection,
+  buildBehaviorSection: buildLanguageSection,
   buildFinalReminderSection: buildToolAndConfirmationRules,
 };

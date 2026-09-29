@@ -132,15 +132,15 @@ export function Hero() {
             <span className="badge">New</span>
             <span>AI-powered citizen assistant for every Indian</span>
           </div>
-          <h1 className="reveal reveal-d1 "  id="hero-title">
+          <h1 className="reveal reveal-d1 text-6xl "  id="hero-title">
             {HERO_CONTENT.en.titlePrefix}<br/>
-            <span className="headline-swap notranslate" id="headline-swap">
+            <span className="headline-swap notranslate mt-4" id="headline-swap">
               <span className={`line ${isOut ? 'out' : ''}`} lang={currentSwapLang.code}>
                 {swapContent.titleSuffix}
               </span>
             </span>
           </h1>
-          <p className="hero-sub reveal reveal-d2">
+          <p className="hero-sub reveal text-xl reveal-d2">
             Speak, type, or call — get step-by-step guidance for government schemes like ration cards, PM-KISAN, Aadhaar, scholarships and 500+ schemes. Works offline, syncs when you're back online, and now available on WhatsApp.
           </p>
           <div className="hero-cta reveal reveal-d3">

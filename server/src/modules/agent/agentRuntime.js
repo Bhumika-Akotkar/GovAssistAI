@@ -1,20 +1,23 @@
-const { dbService } = require('../../services/DatabaseService');
-const { ToolRegistry } = require('../../tools/ToolRegistry');
-const { buildAgentPrompt } = require('../prompt/promptBuilder');
-const { executeWebhookTool, buildToolSchema } = require('../../tools/WebhookToolExecutor');
+const { dbService } = require("../../services/DatabaseService");
+const { ToolRegistry } = require("../../tools/ToolRegistry");
+const { buildAgentPrompt } = require("../prompt/promptBuilder");
+const {
+  executeWebhookTool,
+  buildToolSchema,
+} = require("../../tools/WebhookToolExecutor");
 
 /**
- * Loads an Agent from the database, builds its ToolRegistry, 
+ * Loads an Agent from the database, builds its ToolRegistry,
  * and generates its system prompt.
- * 
- * @param {string} agentId 
+ *
+ * @param {string} agentId
  * @returns {Promise<{ agent: object, registry: ToolRegistry, systemPrompt: string }>}
  */
-async function loadAgentRuntime(agentId) {
-  const agent = await dbService.prisma.agent.findUnique({ 
-    where: { id: agentId } 
+async function loadAgentRuntime(agentId, { channel = "voice" } = {}) {
+  const agent = await dbService.prisma.agent.findUnique({
+    where: { id: agentId },
   });
-  
+
   if (!agent) {
     throw new Error(`Agent ${agentId} not found`);
   }
@@ -24,18 +27,20 @@ async function loadAgentRuntime(agentId) {
   // Load custom agent tools
   if (agent.tools) {
     let customTools = [];
-    if (typeof agent.tools === 'string') {
-      try { customTools = JSON.parse(agent.tools); } catch(e) {}
+    if (typeof agent.tools === "string") {
+      try {
+        customTools = JSON.parse(agent.tools);
+      } catch (e) {}
     } else {
       customTools = agent.tools;
     }
-    
+
     if (Array.isArray(customTools)) {
       for (const tool of customTools) {
         if (!tool.name) continue;
         const schema = buildToolSchema(tool);
 
-        if (tool.type === 'webhook' && tool.webhookUrl) {
+        if (tool.type === "webhook" && tool.webhookUrl) {
           // Server-side HTTP webhook tool
           registry.registerWebhook(tool.name, schema, tool);
         } else {
@@ -50,31 +55,34 @@ async function loadAgentRuntime(agentId) {
   let dataCollection = null;
   if (agent.dataCollection) {
     try {
-      dataCollection = typeof agent.dataCollection === 'string' 
-        ? JSON.parse(agent.dataCollection) 
-        : agent.dataCollection;
-    } catch(e) {}
+      dataCollection =
+        typeof agent.dataCollection === "string"
+          ? JSON.parse(agent.dataCollection)
+          : agent.dataCollection;
+    } catch (e) {}
   }
-  
+
   // Also check legacy dataToCollect for backward compatibility
   const legacyData = agent.tools?.dataToCollect;
   const fields = dataCollection || legacyData;
-  
+
   if (fields && fields.length > 0) {
     registry.injectDataCollectionTool(fields);
   }
 
   // Build the dynamic prompt
-  const systemPrompt = buildAgentPrompt({ 
+  const systemPrompt = buildAgentPrompt({
     agent: {
       ...agent,
-      dataCollection: fields
-    }
+      dataCollection: fields,
+    },
+    channel,
+    timezone: agent.timezone,
   });
 
   return { agent, registry, systemPrompt };
 }
 
 module.exports = {
-  loadAgentRuntime
+  loadAgentRuntime,
 };
