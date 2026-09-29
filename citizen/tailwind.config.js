@@ -45,7 +45,7 @@ export default {
       },
       fontFamily: {
         body: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        display: ['"Instrument Serif"', 'Georgia', 'serif'],
+        display: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'monospace'],
         devanagari: ['"Noto Sans Devanagari"', 'system-ui', 'sans-serif'],
         tamil: ['"Noto Sans Tamil"', 'system-ui', 'sans-serif'],

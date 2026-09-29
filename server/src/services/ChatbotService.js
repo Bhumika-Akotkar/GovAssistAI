@@ -9,6 +9,8 @@ const { ToolExecutor } = require('../tools/ToolExecutor');
 const { buildChatPrompt, DEFAULT_ASSISTANT_NAME } = require('../modules/prompt/chatOnlyPromptBuilder');
 const { buildToolSchema } = require('../tools/WebhookToolExecutor');
 const { createLLM } = require('../integrations/ProviderFactory');
+const { EligibilityFlowManager } = require('./EligibilityFlowManager');
+const { schemeService } = require('./SchemeService');
 const crypto = require('crypto');
 
 class ChatbotService extends EventEmitter {
@@ -27,6 +29,12 @@ class ChatbotService extends EventEmitter {
     this.transcript = [];
     this.registry = new ToolRegistry();
 
+    this.eligibilityFlow = new EligibilityFlowManager({
+      dbService: dbService,
+      schemeService: schemeService,
+      llmService: null
+    });
+
     this.toolExecutor = new ToolExecutor({
       registry: this.registry,
       tts: null, // Chat service doesn't use TTS
@@ -36,7 +44,28 @@ class ChatbotService extends EventEmitter {
       endConversation: this.endConversation.bind(this),
       usageTracker: this.usageTracker,
       getRecentTranscript: this.getRecentTranscript.bind(this),
-      getStateManager: () => null
+      getStateManager: () => null,
+      getEligibilityFlow: () => this.eligibilityFlow,
+      onToolResult: async (toolName, toolCallId, result) => {
+        if (!this.conversationId) return;
+        try {
+          await dbService.saveCitizenMessage({
+            conversationId: this.conversationId,
+            role: 'tool',
+            content: typeof result === 'string' ? result : JSON.stringify(result),
+            language: this.language || 'en-IN',
+            clientItemId: toolCallId || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            toolCalls: {
+              id: toolCallId,
+              name: toolName,
+              result: result
+            }
+          });
+          this.persistEligibilityState().catch(() => {});
+        } catch (err) {
+          console.error('[ChatbotService] Failed to persist tool message:', err);
+        }
+      }
     });
 
     this.language = 'en-US';
@@ -114,6 +143,20 @@ class ChatbotService extends EventEmitter {
     this.language = language;
     this.deviceId = config.deviceId || null;
     
+    if (this.conversationId && this.deviceId) {
+      try {
+        await dbService.saveCitizenConversation({
+          id: this.conversationId,
+          deviceId: this.deviceId,
+          language: this.language,
+          channel: 'chat',
+          agentId: this.toolExecutor.agentId,
+        });
+      } catch (e) {
+        console.error('[ChatbotService] Failed to ensure conversation on start:', e);
+      }
+    }
+
     // Send to client to start the session, then rehydrate if necessary
     this.sendToClient({ event: 'start', config });
 
@@ -146,6 +189,10 @@ class ChatbotService extends EventEmitter {
     this.registry.injectInternalCrmTools();
     this.registry.injectSchemeSearchTool();
     this.registry.injectApplicationStepsTool();
+    this.registry.injectEligibilityTools({
+      getFlowManager: () => this.eligibilityFlow,
+      getLanguage: () => this.language
+    });
     try {
       // Set chat-specific model if configured, otherwise use default
       if (process.env.CHAT_LLM_MODEL) {
@@ -208,19 +255,46 @@ class ChatbotService extends EventEmitter {
           role: msg.role,
           content: msg.content,
           tool_calls: msg.toolCalls,
-          tool_call_id: msg.toolCalls?.[0]?.id,
-          name: msg.toolCalls?.[0]?.name,
+          tool_call_id: msg.toolCalls?.[0]?.id || msg.toolCalls?.id,
+          name: msg.toolCalls?.[0]?.name || msg.toolCalls?.name,
         });
 
-        if (msg.content) {
+        const ts = msg.createdAt ? new Date(msg.createdAt).getTime() : Date.now();
+
+        if (msg.role === 'tool' && msg.toolCalls) {
+          const tc = Array.isArray(msg.toolCalls) ? msg.toolCalls[0] : msg.toolCalls;
+          const toolCallId = tc?.id || msg.clientItemId || `tool-${ts}`;
+          const toolName = tc?.name || tc?.toolName || 'tool';
+          let parsedResult = tc?.result;
+          if (parsedResult === undefined && msg.content) {
+            try { parsedResult = JSON.parse(msg.content); } catch (e) { parsedResult = msg.content; }
+          }
           this.sendToClient({
-            event: 'transcript',
-            data: {
-              speaker: msg.role === 'user' ? 'user' : 'assistant',
-              text: msg.content,
-              isFinal: true
-            }
+            event: 'tool_call_started',
+            toolName,
+            args: tc?.args || {},
+            toolCallId,
+            timestamp: ts
           });
+          this.sendToClient({
+            event: 'tool_call_completed',
+            toolName,
+            toolCallId,
+            result: parsedResult,
+            timestamp: ts
+          });
+        } else if (msg.role === 'user' || msg.role === 'assistant') {
+          if (msg.content) {
+            this.sendToClient({
+              event: 'transcript',
+              data: {
+                speaker: msg.role === 'user' ? 'user' : 'assistant',
+                text: msg.content,
+                isFinal: true,
+                timestamp: ts
+              }
+            });
+          }
         }
       }
 
@@ -230,6 +304,15 @@ class ChatbotService extends EventEmitter {
           role: 'system',
           content: `[SYSTEM NOTIFICATION] The user has explicitly changed the conversation language to BCP-47 code: ${newLang}. From now on, you MUST respond entirely in this language.`
         });
+      }
+
+      if (conversation.state && conversation.state.eligibilityFlow) {
+        try {
+          this.eligibilityFlow.loadState(conversation.state.eligibilityFlow);
+          console.log(`[ChatbotService] Rehydrated eligibility flow state: ${JSON.stringify(conversation.state.eligibilityFlow.status)}`);
+        } catch (e) {
+          console.error('[ChatbotService] Failed to rehydrate eligibility flow state:', e);
+        }
       }
 
       console.log(`[ChatbotService] Rehydrated ${messages.length} messages (clamped to ${this.MAX_CONTEXT_MESSAGES})`);
@@ -358,17 +441,34 @@ class ChatbotService extends EventEmitter {
       }
     }
 
+    const effectiveId = targetId || ("call_" + Math.random().toString(36).substring(7));
+
     this.transcript.push({
       role: 'tool',
-      tool_call_id: targetId || ("call_" + Math.random().toString(36).substring(7)),
+      tool_call_id: effectiveId,
       name: toolName,
       content: JSON.stringify(result)
     });
 
+    if (this.conversationId) {
+      dbService.saveCitizenMessage({
+        conversationId: this.conversationId,
+        role: 'tool',
+        content: typeof result === 'string' ? result : JSON.stringify(result),
+        language: this.language || 'en-IN',
+        clientItemId: effectiveId,
+        toolCalls: {
+          id: effectiveId,
+          name: toolName,
+          result: result
+        }
+      }).catch(err => console.error('[ChatbotService] Failed to persist frontend tool result:', err));
+    }
+
     this.sendToClient({
       event: 'tool_call_completed',
       toolName,
-      toolCallId: targetId || toolCallId,
+      toolCallId: effectiveId,
       result,
       timestamp: Date.now()
     });
@@ -378,6 +478,47 @@ class ChatbotService extends EventEmitter {
       this.getAllTools(),
       'auto'
     );
+  }
+
+  async persistMessage(role, content, language) {
+    if (!this.conversationId) return;
+    try {
+      await dbService.saveCitizenMessage({
+        conversationId: this.conversationId,
+        role,
+        content: content || '',
+        language: language || this.language || 'en-IN',
+        clientItemId: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      });
+    } catch (err) {
+      console.error(`[ChatbotService] Failed to persist ${role} message:`, err);
+    }
+  }
+
+  async persistEligibilityState() {
+    if (!this.conversationId) return;
+    try {
+      const eligibilityState = this.eligibilityFlow?.isActive?.()
+        ? this.eligibilityFlow.getState()
+        : (this.eligibilityFlow?.state || null);
+      if (!eligibilityState) return;
+      await dbService.prisma.citizenConversation.upsert({
+        where: { id: this.conversationId },
+        create: {
+          id: this.conversationId,
+          deviceId: this.deviceId || 'unknown',
+          language: this.language,
+          channel: 'chat',
+          agentId: this.toolExecutor.agentId,
+          state: { eligibilityFlow: eligibilityState }
+        },
+        update: {
+          state: { eligibilityFlow: eligibilityState }
+        }
+      });
+    } catch (e) {
+      console.error('[ChatbotService] Failed to persist eligibility state:', e.message);
+    }
   }
 
   endConversation() {
@@ -399,12 +540,16 @@ class ChatbotService extends EventEmitter {
     });
 
     if (this.conversationId) {
+      const eligibilityState = this.eligibilityFlow?.isActive?.()
+        ? this.eligibilityFlow.getState()
+        : (this.eligibilityFlow?.state || null);
       dbService.saveCitizenConversation({
         id: this.conversationId,
         deviceId: this.deviceId,
         language: this.language,
         channel: 'chat',
         agentId: this.toolExecutor.agentId,
+        state: eligibilityState ? { eligibilityFlow: eligibilityState } : undefined
       }).catch(e => console.error('[ChatbotService] Failed to save conversation:', e));
     }
 
@@ -418,6 +563,11 @@ class ChatbotService extends EventEmitter {
       sttDurationSeconds: 0,
       llmPromptTokens: usage.llmPromptTokens,
       llmCompletionTokens: usage.llmCompletionTokens,
+      ttsCharacters: usage.ttsCharacters || 0,
+      toolCalls: usage.toolCalls || 0,
+      transcript: this.transcript
+    }).catch(e => console.error('[ChatbotService] Failed to save session:', e));
+  }
 
   sendToClient(msg) {
     if (this.channel) {

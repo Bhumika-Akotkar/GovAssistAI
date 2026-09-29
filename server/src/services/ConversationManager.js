@@ -15,6 +15,8 @@ const { buildToolSchema } = require('../tools/WebhookToolExecutor');
 const { CallStateManager } = require('./CallStateManager');
 const { createLLM, createTTS, createSTT } = require('../integrations/ProviderFactory');
 const { getTTSConfig, getScriptForLanguage, getBaseLanguage, hasTTS } = require('../modules/i18n/languageRegistry');
+const { EligibilityFlowManager } = require('./EligibilityFlowManager');
+const { schemeService } = require('./SchemeService');
 
 class ConversationManager extends EventEmitter {
   constructor(channelAdapter, providerConfig = null) {
@@ -33,7 +35,13 @@ class ConversationManager extends EventEmitter {
 
     this.transcript = [];
     this.registry = new ToolRegistry();
-    
+
+    this.eligibilityFlow = new EligibilityFlowManager({
+      dbService: dbService,
+      schemeService: schemeService,
+      llmService: null
+    });
+
     this.stateManager = null;
 
     this.toolExecutor = new ToolExecutor({
@@ -45,7 +53,8 @@ class ConversationManager extends EventEmitter {
       endConversation: this.endConversation.bind(this),
       usageTracker: this.usageTracker,
       getRecentTranscript: this.getRecentTranscript.bind(this),
-      getStateManager: () => this.stateManager
+      getStateManager: () => this.stateManager,
+      getEligibilityFlow: () => this.eligibilityFlow
     });
 
     this.userSpeechBuffer = "";
@@ -264,6 +273,10 @@ class ConversationManager extends EventEmitter {
 
     this.registry.injectInternalCrmTools();
     this.registry.injectSchemeSearchTool();
+    this.registry.injectEligibilityTools({
+      getFlowManager: () => this.eligibilityFlow,
+      getLanguage: () => this.language
+    });
 
     this.llm.initialize(fullPrompt);
     this.stt.connect(provider, language).catch(e => console.error('[ConversationManager] STT connect error:', e));
@@ -360,6 +373,15 @@ class ConversationManager extends EventEmitter {
         
         if (lastUserMsg && !lastAssistantMsg) {
           this.stateManager.startCollecting();
+        }
+      }
+
+      if (conversation.state && conversation.state.eligibilityFlow) {
+        try {
+          this.eligibilityFlow.loadState(conversation.state.eligibilityFlow);
+          console.log(`[ConversationManager] Rehydrated eligibility flow state`);
+        } catch (e) {
+          console.error('[ConversationManager] Failed to rehydrate eligibility flow:', e);
         }
       }
 
@@ -560,12 +582,16 @@ class ConversationManager extends EventEmitter {
     });
 
     if (this.conversationId) {
+      const eligibilityState = this.eligibilityFlow?.isActive?.()
+        ? this.eligibilityFlow.getState()
+        : (this.eligibilityFlow?.state || null);
       dbService.saveCitizenConversation({
         id: this.conversationId,
         deviceId: this.deviceId,
         language: this.language,
         channel: 'text',
         agentId: this.toolExecutor.agentId,
+        state: eligibilityState ? { eligibilityFlow: eligibilityState } : undefined
       }).catch(e => console.error('[ConversationManager] Failed to save conversation:', e));
     }
 

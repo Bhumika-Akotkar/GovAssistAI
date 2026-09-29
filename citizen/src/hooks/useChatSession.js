@@ -128,7 +128,7 @@ export function useChatSession() {
             speaker: msg.data.speaker,
             text: msg.data.text,
             isFinal: msg.data.isFinal,
-            timestamp: Date.now(),
+            timestamp: msg.data.timestamp || Date.now(),
           });
           return next;
         });
@@ -171,13 +171,29 @@ export function useChatSession() {
       }
 
       case 'tool_call_completed': {
-        setTranscript((prev) =>
-          prev.map((t) =>
-            t.type === 'tool_call' && t.toolCallId === msg.toolCallId
-              ? { ...t, completed: true, result: msg.result }
-              : t,
-          ),
-        );
+        setTranscript((prev) => {
+          const idx = prev.findIndex((t) => t.type === 'tool_call' && t.toolCallId === msg.toolCallId);
+          if (idx >= 0) {
+            return prev.map((t) =>
+              t.type === 'tool_call' && t.toolCallId === msg.toolCallId
+                ? { ...t, completed: true, result: msg.result }
+                : t,
+            );
+          }
+          return [
+            ...prev,
+            {
+              type: 'tool_call',
+              speaker: 'agent',
+              toolName: msg.toolName,
+              toolCallId: msg.toolCallId,
+              startTime: msg.timestamp || Date.now(),
+              completed: true,
+              result: msg.result,
+              timestamp: msg.timestamp || Date.now(),
+            },
+          ];
+        });
         setPendingToolCalls((prev) => {
           const next = { ...prev };
           delete next[msg.toolCallId];
@@ -207,7 +223,12 @@ export function useChatSession() {
     }
     wsRef.current = null;
     connectedForRef.current = null;
+    currentMessageRef.current = '';
     setStatus('idle');
+    setConversationId(null);
+    setTranscript([]);
+    setPendingToolCalls({});
+    setIsProcessing(false);
   }, []);
 
   const connect = useCallback(
@@ -222,6 +243,9 @@ export function useChatSession() {
       languageRef.current = language;
       setStatus('connecting');
       setLastError(null);
+      setConversationId(config.conversationId || null);
+      setTranscript([]);
+      setIsProcessing(false);
 
       return new Promise((resolve) => {
         let ws;
@@ -238,6 +262,9 @@ export function useChatSession() {
 
         ws.onopen = () => {
           setStatus('ready');
+          setTranscript([]);
+          setConversationId(config.conversationId || null);
+          currentMessageRef.current = '';
           ws.send(
             JSON.stringify({
               type: 'chat.start',

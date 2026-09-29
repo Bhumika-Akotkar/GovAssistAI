@@ -1223,6 +1223,278 @@ class ToolRegistry {
       }
     });
   }
+
+  /**
+   * Inject the eligibility check tools. The stateful EligibilityFlowManager is passed
+   * from the ChatbotService/ConversationManager that owns the ToolRegistry, since
+   * each call/conversation has its own flow state.
+   */
+  injectEligibilityTools({ getFlowManager, getLanguage }) {
+    this._builtIn.set('start_eligibility_check', {
+      schema: {
+        type: "function",
+        function: {
+          name: "start_eligibility_check",
+          description:
+            "Start the structured eligibility check flow. Call this tool when the user asks for a general eligibility check " +
+            "without selecting any scheme (e.g. 'Check my eligibility', 'पात्रता जांचें', 'How many schemes can I apply for?'). " +
+            "This will collect the citizen profile and evaluate all available schemes. " +
+            "NOTE: If the user specified a specific scheme (e.g. 'Am I eligible for PM-KISAN?'), call check_scheme_eligibility instead.",
+          parameters: {
+            type: "object",
+            properties: {
+              reason: { type: "string", description: "Why eligibility was requested (e.g. 'general check', 'scheme check')" },
+              schemeName: { type: "string", description: "Optional name of a specific scheme if one was mentioned" },
+              schemeId: { type: "string", description: "Optional ID of a specific scheme" }
+            },
+            additionalProperties: false
+          }
+        }
+      },
+      fillerKey: 'generic',
+      executor: async (args = {}) => {
+        const flow = getFlowManager();
+        const lang = getLanguage ? getLanguage() : 'en-IN';
+        if (!flow) return { ok: false, error: 'FLOW_UNAVAILABLE' };
+        const result = await flow.startFlow({
+          schemeName: args.schemeName,
+          schemeId: args.schemeId,
+          language: lang
+        });
+        const evalRes = result?.evaluationResults;
+        const schemes = evalRes?.schemes || evalRes?.potentiallyRelevantSchemes || (evalRes?.scheme ? [evalRes.scheme] : (result?.scheme ? [result.scheme] : (result?.schemes || [])));
+        return {
+          ok: true,
+          type: 'eligibility_started',
+          mode: result?.mode || (args.schemeName ? 'specific_scheme' : 'general'),
+          scheme: result?.scheme || null,
+          schemes: schemes.length > 0 ? schemes : undefined,
+          nextQuestion: result?.nextQuestion ?? result,
+          evaluationResults: result?.evaluationResults || null,
+          language: lang,
+          message: result?.evaluationResults
+            ? 'Eligibility evaluated.'
+            : 'Eligibility flow started. Next question has been prepared.'
+        };
+      }
+    });
+
+    this._builtIn.set('check_scheme_eligibility', {
+      schema: {
+        type: "function",
+        function: {
+          name: "check_scheme_eligibility",
+          description:
+            "Check eligibility for a SPECIFIC government scheme (e.g. 'PM-KISAN', 'Mukhyamantri Ladli Behna Yojana', 'Ayushman Bharat'). " +
+            "Call this tool when the user asks 'Am I eligible for [Scheme]?', 'Check my eligibility for [Scheme]', " +
+            "or clicks the 'Check Eligibility' button on a scheme card. " +
+            "This checks ONLY the criteria required for this specific scheme without running the full 6-question eligibility engine across all schemes.",
+          parameters: {
+            type: "object",
+            properties: {
+              schemeName: {
+                type: "string",
+                description: "The name or acronym of the specific scheme (e.g. 'PM-KISAN', 'Mukhyamantri Ladli Behna Yojana', 'Ayushman Bharat')"
+              },
+              schemeId: {
+                type: "string",
+                description: "Optional database ID of the scheme if known"
+              },
+              knownDetails: {
+                type: "object",
+                description: "Optional key-value pairs of criteria the user already stated in their message (e.g. { age: 25, state: 'Madhya Pradesh', gender: 'female', farmerStatus: true, landOwnership: 2, annualIncome: 150000 })"
+              }
+            },
+            required: ["schemeName"],
+            additionalProperties: false
+          }
+        }
+      },
+      fillerKey: 'generic',
+      executor: async (args = {}) => {
+        const flow = getFlowManager();
+        const lang = getLanguage ? getLanguage() : 'en-IN';
+        if (!flow) return { ok: false, error: 'FLOW_UNAVAILABLE' };
+        const result = await flow.startSpecificSchemeFlow(args.schemeName || args.schemeId, {
+          knownDetails: args.knownDetails,
+          language: lang
+        });
+        const evalRes = result?.evaluationResults;
+        const schemes = evalRes?.schemes || (evalRes?.scheme ? [evalRes.scheme] : (result?.scheme ? [result.scheme] : (result?.schemes || [])));
+        return {
+          ok: true,
+          type: 'scheme_eligibility_checked',
+          mode: 'specific_scheme',
+          scheme: result?.scheme || null,
+          schemes: schemes.length > 0 ? schemes : undefined,
+          nextQuestion: result?.nextQuestion || null,
+          evaluationResults: result?.evaluationResults || null,
+          error: result?.error || null,
+          language: lang,
+          message: result?.evaluationResults
+            ? 'Eligibility evaluated for specific scheme.'
+            : (result?.error ? result.message : 'Specific scheme eligibility flow started. Next question prepared.')
+        };
+      }
+    });
+
+    this._builtIn.set('answer_eligibility_question', {
+      schema: {
+        type: "function",
+        function: {
+          name: "answer_eligibility_question",
+          description:
+            "Provide the user's answer to the current eligibility question. Use this tool ONLY when you are inside the eligibility_check flow " +
+            "and the user is responding to a profile question (age, state, gender, income, occupation etc). " +
+            "Extract and normalize the value into ENGLISH internal codes (e.g. 'Madhya Pradesh', 'male', 'obc', 180000). " +
+            "Pass short answers exactly as given (e.g. 'MP' for Madhya Pradesh, '21' for age) — the engine will canonicalize them. " +
+            "If the user says 'I don't know', set the value to null and mark as unknown.",
+          parameters: {
+            type: "object",
+            properties: {
+              field: { type: "string", description: "The field name being collected (e.g. 'age', 'state', 'annualIncome')" },
+              rawValue: {
+                type: "string",
+                description: "The user's exact answer, or a best-effort normalized string. 'null' string if unknown."
+              },
+              isUnknown: {
+                type: "boolean",
+                description: "Set to true if the user explicitly said they don't know / are unsure."
+              }
+            },
+            required: ["field", "rawValue"],
+            additionalProperties: false
+          }
+        }
+      },
+      fillerKey: 'save_collected_data',
+      executor: async (args) => {
+        const flow = getFlowManager();
+        const lang = getLanguage ? getLanguage() : 'en-IN';
+        if (!flow) return { ok: false, error: 'FLOW_UNAVAILABLE' };
+        const valueToPass = args.isUnknown ? "I don't know" : (args.rawValue ?? null);
+        const result = await flow.processAnswer(valueToPass, lang);
+        const evalRes = result.evaluationResults;
+        const schemes = evalRes?.schemes || evalRes?.potentiallyRelevantSchemes || (evalRes?.scheme ? [evalRes.scheme] : (result.schemes || []));
+        return {
+          ok: true,
+          type: 'eligibility_answer_processed',
+          fieldUpdated: result.fieldUpdated,
+          validationError: result.validationError,
+          nextQuestion: result.nextQuestion,
+          evaluationResults: result.evaluationResults,
+          schemes: schemes.length > 0 ? schemes : undefined,
+          intentSwitch: result.intentSwitch,
+          userMessage: result.userMessage,
+          message: result.evaluationResults ? 'Eligibility evaluation complete. Schemes ready for display.' : 'Answer processed.'
+        };
+      }
+    });
+
+    this._builtIn.set('update_eligibility_profile', {
+      schema: {
+        type: "function",
+        function: {
+          name: "update_eligibility_profile",
+          description:
+            "Update a single field in the citizen profile (after results are shown, or to correct a value). " +
+            "Use this when the user says things like 'Change my income to 3 lakh' or 'Update state to Karnataka'. " +
+            "Do NOT re-run the full interview — just patch this one field. Matching will be re-evaluated automatically.",
+          parameters: {
+            type: "object",
+            properties: {
+              field: { type: "string", description: "The internal field name (e.g. 'annualIncome', 'state', 'age')" },
+              value: {
+                type: "string",
+                description: "New raw value (English/any language, the engine will normalize). 'null' string to mark unknown."
+              },
+              isUnknown: {
+                type: "boolean",
+                description: "Set to true if the user wants to clear this field / mark as unknown."
+              }
+            },
+            required: ["field", "value"],
+            additionalProperties: false
+          }
+        }
+      },
+      fillerKey: 'save_collected_data',
+      executor: async (args) => {
+        const flow = getFlowManager();
+        const lang = getLanguage ? getLanguage() : 'en-IN';
+        if (!flow) return { ok: false, error: 'FLOW_UNAVAILABLE' };
+        const value = args.isUnknown ? "I don't know" : args.value;
+        const result = await flow.updateProfileField(args.field, value, lang);
+        return {
+          ok: result.success,
+          type: 'eligibility_profile_updated',
+          updatedField: result.updatedField,
+          error: result.error,
+          reEvaluation: result.reEvaluation,
+          message: result.success ? 'Profile field updated and eligibility re-evaluated.' : 'Failed to update field.'
+        };
+      }
+    });
+
+    this._builtIn.set('evaluate_all_eligibility', {
+      schema: {
+        type: "function",
+        function: {
+          name: "evaluate_all_eligibility",
+          description:
+            "Manually re-run eligibility evaluation against all schemes using the current profile. " +
+            "Use this after profile edits, or when the user asks 'Show me matches again' / 'Recheck'.",
+          parameters: {
+            type: "object",
+            properties: {},
+            additionalProperties: false
+          }
+        }
+      },
+      fillerKey: 'generic',
+      executor: async () => {
+        const flow = getFlowManager();
+        const lang = getLanguage ? getLanguage() : 'en-IN';
+        if (!flow) return { ok: false, error: 'FLOW_UNAVAILABLE' };
+        const results = await flow.runEvaluate(lang);
+        const schemes = results?.schemes || results?.potentiallyRelevantSchemes || [];
+        return {
+          ok: true,
+          type: 'eligibility_evaluated',
+          results,
+          schemes: schemes.length > 0 ? schemes : undefined,
+          message: 'Eligibility re-evaluated.'
+        };
+      }
+    });
+
+    this._builtIn.set('end_eligibility_check', {
+      schema: {
+        type: "function",
+        function: {
+          name: "end_eligibility_check",
+          description: "Exit the eligibility flow and return to normal conversation. Use this if the user explicitly wants to stop the check.",
+          parameters: {
+            type: "object",
+            properties: {},
+            additionalProperties: false
+          }
+        }
+      },
+      fillerKey: 'generic',
+      executor: async () => {
+        const flow = getFlowManager();
+        if (!flow) return { ok: false };
+        const prior = flow.endFlow();
+        return {
+          ok: true,
+          type: 'eligibility_ended',
+          priorState: prior,
+          message: 'Eligibility flow exited.'
+        };
+      }
+    });
+  }
 }
 
 module.exports = { ToolRegistry };

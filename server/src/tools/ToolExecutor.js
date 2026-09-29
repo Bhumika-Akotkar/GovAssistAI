@@ -54,7 +54,7 @@ class ToolExecutor {
    * @param {Function} opts.getRecentTranscript - () => Array
    * @param {Function} opts.getStateManager   - () => CallStateManager
    */
-  constructor({ registry, tts, llm, transcript, sendToClient, endConversation, usageTracker, getRecentTranscript, getStateManager }) {
+  constructor({ registry, tts, llm, transcript, sendToClient, endConversation, usageTracker, getRecentTranscript, getStateManager, onToolResult }) {
     this.registry        = registry;
     this.tts             = tts;
     this.llm             = llm;
@@ -64,6 +64,7 @@ class ToolExecutor {
     this.usageTracker    = usageTracker;
     this.getRecentTranscript = getRecentTranscript || (() => transcript);
     this.getStateManager = getStateManager || (() => null);
+    this.onToolResult    = onToolResult || null;
     
     // Guard: prevent save_collected_data from being executed more than once per call
     this._dataSaved      = false;
@@ -876,6 +877,14 @@ class ToolExecutor {
       result,
       timestamp: Date.now()
     });
+
+    if (typeof this.onToolResult === 'function') {
+      try {
+        this.onToolResult(toolName, toolCallId, result);
+      } catch (err) {
+        console.error('[ToolExecutor] onToolResult error:', err);
+      }
+    }
   }
 
   /** Play a filler phrase over TTS to mask latency. */

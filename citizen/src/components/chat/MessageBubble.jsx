@@ -31,41 +31,82 @@ export function MessageBubble({ message, languageCode = 'en', onSend }) {
 
   const isSearchSchemesTool = message.type === 'tool_call' && message.toolName === 'search_schemes';
   const isStepsTool = message.type === 'tool_call' && message.toolName === 'get_application_steps';
+  const isEligibilityTool = message.type === 'tool_call' && [
+    'answer_eligibility_question',
+    'start_eligibility_check',
+    'check_scheme_eligibility',
+    'evaluate_all_eligibility'
+  ].includes(message.toolName);
+
+  const extractSchemesFromMessage = (msg) => {
+    if (!msg || !msg.result) return [];
+    const r = msg.result;
+    if (Array.isArray(r.schemes) && r.schemes.length > 0) return r.schemes;
+    if (Array.isArray(r.potentiallyRelevantSchemes) && r.potentiallyRelevantSchemes.length > 0) return r.potentiallyRelevantSchemes;
+    if (Array.isArray(r) && r.length > 0 && (r[0]?.name || r[0]?.id)) return r;
+    const evalRes = r.evaluationResults || r.results;
+    if (evalRes) {
+      if (Array.isArray(evalRes.schemes) && evalRes.schemes.length > 0) return evalRes.schemes;
+      if (Array.isArray(evalRes.potentiallyRelevantSchemes) && evalRes.potentiallyRelevantSchemes.length > 0) return evalRes.potentiallyRelevantSchemes;
+      const combined = [
+        ...(evalRes.potentiallyEligible || []).map(x => x.scheme || x),
+        ...(evalRes.moreInformationRequired || []).map(x => x.scheme || x)
+      ].filter(s => s && (s.name || s.id));
+      if (combined.length > 0) return combined;
+      if (evalRes.scheme) return [evalRes.scheme];
+    }
+    if (r.scheme) return [r.scheme];
+    return [];
+  };
+
   const stepsSchemeId = isStepsTool && message.completed ? message.result?.schemeId : null;
 
   // Fetch steps when a stepsSchemeId is present and not yet loaded
   useEffect(() => {
     if (!stepsSchemeId || stepData || stepLoading) return;
     setStepLoading(true);
-    fetch(`http://localhost:8083/api/schemes/${stepsSchemeId}/steps`)
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { setStepData(data); setStepLoading(false); })
+    fetch(`/api/schemes/${stepsSchemeId}/steps`)
+      .then(r => {
+        if (!r.ok) return fetch(`http://localhost:8083/api/schemes/${stepsSchemeId}/steps`).then(r2 => r2.ok ? r2.json() : null);
+        return r.json();
+      })
+      .then(data => { if (data) setStepData(data); setStepLoading(false); })
       .catch(() => setStepLoading(false));
   }, [stepsSchemeId]);
 
-  // If this is the search_schemes tool call, render the horizontal scheme cards carousel
-  if (isSearchSchemesTool) {
+  // If this is search_schemes or eligibility tool with schemes, render SchemeCardsCarousel
+  if (isSearchSchemesTool || isEligibilityTool) {
     if (!message.completed) {
       return (
-        <div className="flex justify-start w-full my-1 pl-11">
+        <div id={message.key ? `msg-${message.key}` : undefined} className="flex justify-start w-full my-1 pl-11">
           <ToolCallCard entry={message} />
         </div>
       );
     }
-    const schemes = Array.isArray(message.result) ? message.result : [];
-    if (schemes.length === 0) return null;
-    return (
-      <div className="flex justify-start w-full my-2 pl-11 pr-4">
-        <SchemeCardsCarousel schemes={schemes} onSelectScheme={onSend} />
-      </div>
-    );
+    const schemes = extractSchemesFromMessage(message);
+    if (schemes.length > 0) {
+      const title = isEligibilityTool
+        ? 'Potentially Relevant Services & Schemes'
+        : 'Explore Government Schemes';
+      return (
+        <div id={message.key ? `msg-${message.key}` : undefined} className="flex justify-start w-full my-2 pl-11 pr-4">
+          <SchemeCardsCarousel schemes={schemes} title={title} onSelectScheme={onSend} />
+        </div>
+      );
+    }
+    if (isEligibilityTool) {
+      return (
+        <div id={message.key ? `msg-${message.key}` : undefined} className="flex justify-start w-full my-1 pl-11">
+          <ToolCallCard entry={message} />
+        </div>
+      );
+    }
   }
 
   // Regular tool calls render as a system affordance, not a chat bubble.
-  // We exclude 'get_application_steps' and 'search_schemes' because they render rich UI cards below.
-  if (message.type === 'tool_call' && !isStepsTool && !isSearchSchemesTool) {
+  if (message.type === 'tool_call' && !isStepsTool && !isSearchSchemesTool && !isEligibilityTool) {
     return (
-      <div className="flex justify-start w-full my-1 pl-11">
+      <div id={message.key ? `msg-${message.key}` : undefined} className="flex justify-start w-full my-1 pl-11">
         <ToolCallCard entry={message} />
       </div>
     );
@@ -75,7 +116,7 @@ export function MessageBubble({ message, languageCode = 'en', onSend }) {
   if (isStepsTool) {
     if (!message.completed) return null; // Wait for it to finish
     return (
-      <div className="flex justify-start w-full my-2 pl-11 pr-4">
+      <div id={message.key ? `msg-${message.key}` : undefined} className="flex justify-start w-full my-2 pl-11 pr-4">
         <div className="w-full">
           {stepLoading && (
             <div className="flex items-center gap-2 text-indigo-500 text-sm py-2">
@@ -130,6 +171,10 @@ export function MessageBubble({ message, languageCode = 'en', onSend }) {
       text = text.replace(mapMatch[0], '').trim();
     }
 
+    // Ensure "Eligible Schemes" is presented as "Potentially Relevant Services & Schemes"
+    text = text.replace(/Eligible Schemes\s*\((?:More Information Required|Potentially Eligible)\):?/gi, 'Potentially Relevant Services & Schemes:');
+    text = text.replace(/Eligible Schemes:?/gi, 'Potentially Relevant Services & Schemes:');
+
     // Hide redundant empty/placeholder/summary text messages after scheme search
     const cleanText = text.trim();
     if (!cleanText || cleanText === '.' || cleanText === '...' || cleanText.toLowerCase().includes('here are some government schemes') || cleanText.toLowerCase().includes('here are the matching government schemes') || cleanText.toLowerCase().includes('here are available schemes')) {
@@ -158,7 +203,7 @@ export function MessageBubble({ message, languageCode = 'en', onSend }) {
     : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <div className={`flex w-full ${isUser ? 'justify-end' : 'justify-start'} gap-3 my-3`}>
+    <div id={message.key ? `msg-${message.key}` : undefined} className={`flex w-full ${isUser ? 'justify-end' : 'justify-start'} gap-3 my-3`}>
       
       {/* Agent Avatar */}
       {!isUser && (

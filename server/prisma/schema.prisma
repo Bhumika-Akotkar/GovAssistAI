@@ -179,6 +179,15 @@ model CitizenConversation {
   channel      String   @default("text")
   agentId      String?
   state        Json?
+
+  title        String?
+  lastMessage  String?
+  schemeSlug   String?
+  schemeName   String?
+  icon         String?
+  accent       String?
+  read         Boolean  @default(true)
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   messages     CitizenMessage[]

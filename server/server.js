@@ -59,6 +59,9 @@ app.use('/api/whatsapp', whatsAppRouter);
 const syncRouter = require('./src/routes/sync');
 app.use('/api/sync', syncRouter);
 
+const conversationsRouter = require('./src/routes/conversations');
+app.use('/api/conversations', conversationsRouter);
+
 const schemesRouter = require('./src/routes/schemes');
 app.use('/api/schemes', schemesRouter);
 

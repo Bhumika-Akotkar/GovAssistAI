@@ -161,6 +161,68 @@ class SchemeService {
 
     return results;
   }
+
+  /**
+   * Find a scheme by its ID or by name (exact, case-insensitive, contains, or fuzzy query).
+   */
+  async findSchemeByNameOrId(nameOrId) {
+    if (!nameOrId || typeof nameOrId !== 'string') return null;
+    const trimmed = nameOrId.trim();
+    if (!trimmed) return null;
+
+    try {
+      // 1. If it looks like a UUID, try direct ID lookup
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed)) {
+        const byId = await this.getSchemeById(trimmed);
+        if (byId) return byId;
+      }
+
+      // 2. Exact match (case-insensitive)
+      const exactMatch = await dbService.prisma.scheme.findFirst({
+        where: {
+          name: { equals: trimmed, mode: 'insensitive' },
+          isActive: true
+        }
+      });
+      if (exactMatch) return exactMatch;
+
+      // 3. Name contains query (case-insensitive)
+      const containsMatch = await dbService.prisma.scheme.findFirst({
+        where: {
+          name: { contains: trimmed, mode: 'insensitive' },
+          isActive: true
+        }
+      });
+      if (containsMatch) return containsMatch;
+
+      // 4. Try stripping common terms like "scheme", "yojana"
+      const cleanName = trimmed
+        .replace(/\(pm-kisan\)|\(pmkisan\)|\(pmjay\)|\(pmfby\)/gi, '')
+        .replace(/scheme|yojana/gi, '')
+        .trim();
+
+      if (cleanName.length > 2 && cleanName !== trimmed) {
+        const cleanContains = await dbService.prisma.scheme.findFirst({
+          where: {
+            name: { contains: cleanName, mode: 'insensitive' },
+            isActive: true
+          }
+        });
+        if (cleanContains) return cleanContains;
+      }
+
+      // 5. Fallback: Search via searchSchemes query scoring
+      const searchMatches = await this.searchSchemes({ query: trimmed });
+      if (searchMatches && searchMatches.length > 0) {
+        return searchMatches[0];
+      }
+
+      return null;
+    } catch (err) {
+      console.error('[SchemeService] findSchemeByNameOrId error:', err);
+      return null;
+    }
+  }
 }
 
 const schemeService = new SchemeService();

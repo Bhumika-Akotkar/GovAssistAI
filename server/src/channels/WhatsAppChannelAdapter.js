@@ -85,6 +85,5 @@ class WhatsAppChannelAdapter extends ChannelAdapter {
   }
 
   }
-}
 
 module.exports = { WhatsAppChannelAdapter };

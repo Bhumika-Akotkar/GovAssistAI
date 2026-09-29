@@ -4,7 +4,10 @@ const { PrismaPg } = require('@prisma/adapter-pg');
 
 class DatabaseService {
   constructor() {
-    const connectionString = process.env.DATABASE_URL;
+    let connectionString = process.env.DATABASE_URL || '';
+    if (connectionString.includes('SchemeSathi@2026')) {
+      connectionString = connectionString.replace('SchemeSathi@2026', 'SchemeSathi%402026');
+    }
     const pool = new Pool({ connectionString });
     const adapter = new PrismaPg(pool);
     this.prisma = new PrismaClient({ adapter });
@@ -32,10 +35,19 @@ class DatabaseService {
         });
       }
 
+      const updatableFields = [
+        'title', 'lastMessage', 'schemeSlug', 'schemeName',
+        'icon', 'accent', 'read', 'language', 'state', 'agentId', 'userId',
+      ];
+      const updateData = { updatedAt: new Date() };
+      for (const f of updatableFields) {
+        if (data[f] !== undefined) updateData[f] = data[f];
+      }
+
       const conversation = await this.prisma.citizenConversation.upsert({
         where: { id: data.id },
         create: data,
-        update: { updatedAt: new Date() },
+        update: updateData,
       });
       return conversation;
     } catch (err) {
@@ -50,7 +62,7 @@ class DatabaseService {
         include: {
           messages: {
             orderBy: { createdAt: 'asc' },
-            take: 40,
+            take: 100,
           },
         },
       });

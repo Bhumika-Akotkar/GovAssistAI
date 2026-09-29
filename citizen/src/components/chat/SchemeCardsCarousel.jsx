@@ -1,14 +1,16 @@
 import React from 'react';
-import { Sparkles, ArrowRight, Building2, CheckCircle2, FileText, Check } from 'lucide-react';
+import { Building2, CheckCircle2, FileText, Check } from 'lucide-react';
 
-export function SchemeCardsCarousel({ schemes = [], onSelectScheme }) {
+export function SchemeCardsCarousel({ schemes = [], title, onSelectScheme }) {
   if (!schemes || schemes.length === 0) return null;
+
+  const headerTitle = title || 'Explore Government Schemes';
 
   return (
     <div className="w-full my-2">
       <div className="flex items-center justify-between mb-2 px-1">
         <span className="text-xs font-semibold text-emerald-800 uppercase tracking-wider flex items-center gap-1.5">
-           Explore Government Schemes
+           {headerTitle}
         </span>
         <span className="text-[11px] text-gray-400">Scroll sideways ➔</span>
       </div>

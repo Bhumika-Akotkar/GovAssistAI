@@ -50,13 +50,25 @@ async function verifyDeviceSecret(deviceId, deviceSecret) {
     select: { deviceSecretHash: true },
   });
 
-  if (!existing) {
+  if (!existing || existing.deviceSecretHash === 'dummy' || !existing.deviceSecretHash.startsWith('$2')) {
     const deviceSecretHash = await bcrypt.hash(deviceSecret, 10);
-    await dbService.prisma.citizenDevice.create({ data: { deviceId, deviceSecretHash } });
+    if (!existing) {
+      await dbService.prisma.citizenDevice.create({ data: { deviceId, deviceSecretHash } });
+    } else {
+      await dbService.prisma.citizenDevice.update({
+        where: { deviceId },
+        data: { deviceSecretHash },
+      });
+    }
     return { isNew: true };
   }
 
-  const matches = await bcrypt.compare(deviceSecret, existing.deviceSecretHash);
+  let matches = false;
+  try {
+    matches = await bcrypt.compare(deviceSecret, existing.deviceSecretHash);
+  } catch (err) {
+    matches = false;
+  }
   return matches ? { isNew: false } : { error: 'Invalid deviceSecret' };
 }
 
