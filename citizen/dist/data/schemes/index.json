@@ -1,0 +1,13 @@
+{
+  "version": "2026-09-26",
+  "schemes": [
+    "pm-kisan",
+    "ayushman-bharat-pmjay",
+    "pm-awas-yojana",
+    "ration-card-nfsa",
+    "aadhaar-services",
+    "student-scholarships",
+    "ujjwala-yojana",
+    "mgnrega"
+  ]
+}

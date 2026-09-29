@@ -1,0 +1,33 @@
+{
+  "slug": "pm-kisan",
+  "title": { "en": "PM-KISAN", "hi": "पीएम-किसान" },
+  "summary": {
+    "en": "Income support of ₹6,000/year for all landholding farmer families, paid in three equal instalments.",
+    "hi": "सभी भूमिधारक किसान परिवारों के लिए ₹6,000/वर्ष की आय सहायता, तीन समान किश्तों में देय।"
+  },
+  "icon": "🌾",
+  "accent": "forest",
+  "category": "Agriculture",
+  "authority": "Ministry of Agriculture & Farmers Welfare",
+  "tags": ["farmers", "income-support", "direct-benefit-transfer"],
+  "eligibility": [
+    { "text": { "en": "All landholding farmer families with cultivable land", "hi": "कृषि योग्य भूमि वाले सभी भूमिधारक किसान परिवार" } },
+    { "text": { "en": "No upper limit on landholding size", "hi": "भूमि जोत के आकार की कोई ऊपरी सीमा नहीं" } },
+    { "text": { "en": "Institutional landholders excluded", "hi": "संस्थागत भूमिधारक बाहर हैं" } },
+    { "text": { "en": "Farmer family = husband, wife, minor children", "hi": "किसान परिवार = पति, पत्नी, नाबालिग बच्चे" } }
+  ],
+  "documents": [
+    { "id": "aadhaar", "label": { "en": "Aadhaar Card", "hi": "आधार कार्ड" }, "required": true, "alternatives": [], "notes": { "en": "Mandatory for registration and DBT", "hi": "पंजीकरण और DBT के लिए अनिवार्य" } },
+    { "id": "land-record", "label": { "en": "Land Records (Khatauni/7-12 Extract)", "hi": "भूमि अभिलेख (खतौनी/7-12 उद्धरण)" }, "required": true, "alternatives": [], "notes": { "en": "Proof of cultivable land ownership", "hi": "कृषि योग्य भूमि के स्वामित्व का प्रमाण" } },
+    { "id": "bank-passbook", "label": { "en": "Bank Passbook", "hi": "बैंक पासबुक" }, "required": true, "alternatives": ["cancelled-cheque"], "notes": { "en": "Account must be linked to Aadhaar", "hi": "खाता आधार से जुड़ा होना चाहिए" } }
+  ],
+  "steps": [
+    { "n": 1, "title": { "en": "Check eligibility on PM-KISAN portal", "hi": "PM-KISAN पोर्टल पर पात्रता जांचें" }, "detail": { "en": "Visit pmkisan.gov.in and click 'Beneficiary Status' to verify if you are already registered.", "hi": "pmkisan.gov.in पर जाएं और 'लाभार्थी स्थिति' पर क्लिक करके सत्यापित करें कि क्या आप पहले से पंजीकृत हैं।" }, "where": "Online (pmkisan.gov.in)", "cost": "Free", "time": "5 min", "tip": { "en": "Keep Aadhaar and mobile number ready", "hi": "आधार और मोबाइल नंबर तैयार रखें" } },
+    { "n": 2, "title": { "en": "Register if not enrolled", "hi": "यदि नामांकित नहीं हैं तो पंजीकरण करें" }, "detail": { "en": "Click 'New Farmer Registration', enter Aadhaar, fill land details, and submit.", "hi": "नया किसान पंजीकरण पर क्लिक करें, आधार दर्ज करें, भूमि विवरण भरें और सबमिट करें।" }, "where": "Online (pmkisan.gov.in) or CSC", "cost": "Free", "time": "15 min", "tip": { "en": "CSC VLE can help if you face issues", "hi": "CSC VLE मदद कर सकते हैं यदि समस्या हो" } },
+    { "n": 3, "title": { "en": "Wait for verification", "hi": "सत्यापन की प्रतीक्षा करें" }, "detail": { "en": "State/UT government verifies land records. You will receive SMS on registration.", "hi": "राज्य/केंद्र शासित प्रदेश सरकार भूमि अभिलेख सत्यापित करती है। पंजीकरण पर आपको SMS मिलेगा।" }, "where": "Automatic", "cost": "Free", "time": "2-4 weeks", "tip": { "en": "Check status using Aadhaar/mobile on portal", "hi": "पोर्टल पर आधार/मोबाइल से स्थिति जांचें" } },
+    { "n": 4, "title": { "en": "Receive instalments", "hi": "किश्तें प्राप्त करें" }, "detail": { "en": "₹2,000 credited every 4 months (Apr-Jul, Aug-Nov, Dec-Mar) to linked bank account.", "hi": "हर 4 महीने में ₹2,000 जुड़े बैंक खाते में जमा (अप्रैल-जुलाई, अगस्त-नवंबर, दिसंबर-मार्च)।" }, "where": "Bank account (DBT)", "cost": "Free", "time": "Ongoing", "tip": { "en": "Ensure Aadhaar is seeded in bank account", "hi": "सुनिश्चित करें कि आधार बैंक खाते में सीडेड है" } }
+  ],
+  "estimatedDays": 30,
+  "officialUrl": "https://pmkisan.gov.in",
+  "updatedAt": "2026-09-26"
+}

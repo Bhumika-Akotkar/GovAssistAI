@@ -1,15 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Outbox, OutboxStatus } from '../offline/Outbox';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Outbox, OutboxStatus } from "../offline/Outbox";
 import {
   initSyncRegistry,
   stopSyncRegistry,
   triggerSync,
   setOnlineStatus as setRegistryOnline,
-} from '../offline/syncRegistry';
-import { SessionContext, WS_URL, createDeviceRef } from './sessionContext';
+} from "../offline/syncRegistry";
+import { SessionContext, WS_URL, createDeviceRef } from "./sessionContext";
 
 export function SessionProvider({ children }) {
-  const [status, setStatus] = useState('idle'); // idle | connecting | ready | error
+  const [status, setStatus] = useState("idle"); // idle | connecting | ready | error
   const [transcript, setTranscript] = useState([]);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -19,7 +19,7 @@ export function SessionProvider({ children }) {
   const [conversationId, setConversationId] = useState(null);
   const [lastError, setLastError] = useState(null);
   const [isOnline, setIsOnline] = useState(
-    typeof navigator === 'undefined' ? true : navigator.onLine,
+    typeof navigator === "undefined" ? true : navigator.onLine,
   );
   const [outbox, setOutbox] = useState({ pending: 0, syncing: 0, failed: 0 });
 
@@ -34,9 +34,9 @@ export function SessionProvider({ children }) {
   const audioLogRef = useRef({ turns: [] });
   // Minted once per page load; the secret itself lives in localStorage.
   const deviceRef = useRef(createDeviceRef());
-  const languageRef = useRef('en-IN');
+  const languageRef = useRef("en-IN");
   const connectedForRef = useRef(null);
-  const sessionModeRef = useRef('chat');
+  const sessionModeRef = useRef("chat");
   const animationFrameRef = useRef(null);
   const vadCtxRef = useRef(null);
   const recognitionRef = useRef(null);
@@ -74,11 +74,11 @@ export function SessionProvider({ children }) {
       setIsOnline(false);
       setRegistryOnline(false);
     };
-    window.addEventListener('online', online);
-    window.addEventListener('offline', offline);
+    window.addEventListener("online", online);
+    window.addEventListener("offline", offline);
     return () => {
-      window.removeEventListener('online', online);
-      window.removeEventListener('offline', offline);
+      window.removeEventListener("online", online);
+      window.removeEventListener("offline", offline);
     };
   }, []);
 
@@ -94,7 +94,7 @@ export function SessionProvider({ children }) {
 
   const resetAudioContext = useCallback(() => {
     if (audioCtxRef.current) {
-      audioCtxRef.current.close().catch(() => { });
+      audioCtxRef.current.close().catch(() => {});
     }
     const Ctx = window.AudioContext || window.webkitAudioContext;
     audioCtxRef.current = new Ctx();
@@ -123,7 +123,7 @@ export function SessionProvider({ children }) {
 
   const playBuffer = useCallback((buffer) => {
     const ctx = audioCtxRef.current;
-    if (!ctx || ctx.state === 'closed') return;
+    if (!ctx || ctx.state === "closed") return;
     const source = ctx.createBufferSource();
     source.buffer = buffer;
     source.connect(ctx.destination);
@@ -135,30 +135,39 @@ export function SessionProvider({ children }) {
   const enqueueBase64Audio = useCallback(
     (base64) => {
       const ctx = audioCtxRef.current;
-      if (!ctx || ctx.state === 'closed') return;
+      if (!ctx || ctx.state === "closed") return;
       const buffer = decodePcm16(base64);
       if (buffer) playBuffer(buffer);
     },
     [decodePcm16, playBuffer],
   );
 
-  const playAudioChunks = useCallback((chunks) => {
-    if (!chunks || chunks.length === 0) return false;
-    if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
-      resetAudioContext();
-    }
-    stopPlayback();
+  const playAudioChunks = useCallback(
+    (chunks) => {
+      if (!chunks || chunks.length === 0) return false;
+      if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
+        resetAudioContext();
+      }
+      stopPlayback();
 
-    for (const base64 of chunks) {
-      const buffer = decodePcm16(base64);
-      if (buffer) playBuffer(buffer);
-    }
-    setIsSpeaking(true);
-    if (speakingTimerRef.current) clearTimeout(speakingTimerRef.current);
-    const timeLeft = Math.max(0, nextStartTimeRef.current - audioCtxRef.current.currentTime);
-    speakingTimerRef.current = setTimeout(() => setIsSpeaking(false), Math.max(timeLeft * 1000 + 200, 800));
-    return true;
-  }, [decodePcm16, playBuffer, resetAudioContext, stopPlayback]);
+      for (const base64 of chunks) {
+        const buffer = decodePcm16(base64);
+        if (buffer) playBuffer(buffer);
+      }
+      setIsSpeaking(true);
+      if (speakingTimerRef.current) clearTimeout(speakingTimerRef.current);
+      const timeLeft = Math.max(
+        0,
+        nextStartTimeRef.current - audioCtxRef.current.currentTime,
+      );
+      speakingTimerRef.current = setTimeout(
+        () => setIsSpeaking(false),
+        Math.max(timeLeft * 1000 + 200, 800),
+      );
+      return true;
+    },
+    [decodePcm16, playBuffer, resetAudioContext, stopPlayback],
+  );
 
   /**
    * "Repeat that" replays the actual audio of the last agent turn from the
@@ -166,158 +175,178 @@ export function SessionProvider({ children }) {
    * wording, which is not what someone who did not catch the answer wants.
    */
   const replayLastReply = useCallback(() => {
-    const chunks = audioLogRef.current.turns[audioLogRef.current.turns.length - 1];
+    const chunks =
+      audioLogRef.current.turns[audioLogRef.current.turns.length - 1];
     return playAudioChunks(chunks);
   }, [playAudioChunks]);
 
   // --- websocket ------------------------------------------------------------
 
-  const handleMessage = useCallback((raw) => {
-    let msg;
-    try {
-      msg = JSON.parse(raw);
-    } catch {
-      return;
-    }
-
-    switch (msg.event) {
-      case 'transcript': {
-        const now = Date.now();
-        // A new final agent turn starts a new audio turn, so a later
-        // "repeat that" replays the right thing.
-        if (msg.data.speaker === 'agent' && msg.data.isFinal) {
-          audioLogRef.current.turns.push([]);
-          // Keep only the last few turns; this is a convenience buffer, not a
-          // recording archive.
-          if (audioLogRef.current.turns.length > 5) audioLogRef.current.turns.shift();
-        }
-        setTranscript((prev) => {
-          const next = [...prev];
-          const last = next[next.length - 1];
-          const mergeable =
-            last && last.type !== 'tool_call' && last.isFinal === false && last.speaker === msg.data.speaker;
-          const entry = {
-            speaker: msg.data.speaker,
-            text: msg.data.text,
-            isFinal: msg.data.isFinal,
-            timestamp: now,
-          };
-          if (mergeable) next[next.length - 1] = entry;
-          else next.push(entry);
-          return next;
-        });
-        break;
+  const handleMessage = useCallback(
+    (raw) => {
+      let msg;
+      try {
+        msg = JSON.parse(raw);
+      } catch {
+        return;
       }
 
-      case 'audio': {
-        const turns = audioLogRef.current.turns;
-        if (turns.length === 0) turns.push([]);
-        turns[turns.length - 1].push(msg.data);
-        // Cap the retained audio so a long answer cannot grow unbounded.
-        if (turns[turns.length - 1].length > 400) turns[turns.length - 1].shift();
-
-        // Map audio back to the transcript so it can be played manually in Chat
-        setTranscript((prev) => {
-          const next = [...prev];
-          for (let i = next.length - 1; i >= 0; i--) {
-            if (next[i].speaker === 'agent' && next[i].type !== 'tool_call') {
-              const chunks = next[i].audioChunks || [];
-              next[i] = { ...next[i], audioChunks: [...chunks, msg.data] };
-              break;
-            }
+      switch (msg.event) {
+        case "transcript": {
+          const now = Date.now();
+          // A new final agent turn starts a new audio turn, so a later
+          // "repeat that" replays the right thing.
+          if (msg.data.speaker === "agent" && msg.data.isFinal) {
+            audioLogRef.current.turns.push([]);
+            // Keep only the last few turns; this is a convenience buffer, not a
+            // recording archive.
+            if (audioLogRef.current.turns.length > 5)
+              audioLogRef.current.turns.shift();
           }
-          return next;
-        });
-
-        // Only autoplay if we are in voice mode
-        if (sessionModeRef.current !== 'chat') {
-          setIsProcessing(false);
-          if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') resetAudioContext();
-          setIsSpeaking(true);
-          enqueueBase64Audio(msg.data);
-          if (speakingTimerRef.current) clearTimeout(speakingTimerRef.current);
-          const timeLeft = Math.max(0, nextStartTimeRef.current - audioCtxRef.current.currentTime);
-          speakingTimerRef.current = setTimeout(() => setIsSpeaking(false), timeLeft * 1000 + 200);
-        }
-        break;
-      }
-
-      case 'clear_audio':
-        // Barge-in: drop anything queued and restart the timeline.
-        resetAudioContext();
-        setIsSpeaking(false);
-        setIsProcessing(false);
-        break;
-
-      case 'clear_processing':
-        setIsProcessing(false);
-        break;
-
-      case 'start':
-        if (msg.config?.conversationId) setConversationId(msg.config.conversationId);
-        break;
-
-      case 'tool_call_started': {
-        const startedAt = msg.timestamp || Date.now();
-        setPendingToolCalls((prev) => ({
-          ...prev,
-          [msg.toolCallId]: {
-            toolName: msg.toolName,
-            args: msg.args,
-            isFrontend: msg.isFrontend,
-            startTime: startedAt,
-          },
-        }));
-        setTranscript((prev) => {
-          const entry = {
-            type: 'tool_call',
-            speaker: 'agent',
-            toolName: msg.toolName,
-            toolCallId: msg.toolCallId,
-            startTime: startedAt,
-            completed: false,
-          };
-          const idx = prev.findIndex((t) => t.type === 'tool_call' && t.toolCallId === msg.toolCallId);
-          if (idx >= 0) {
+          setTranscript((prev) => {
             const next = [...prev];
-            next[idx] = entry;
+            const last = next[next.length - 1];
+            const mergeable =
+              last &&
+              last.type !== "tool_call" &&
+              last.isFinal === false &&
+              last.speaker === msg.data.speaker;
+            const entry = {
+              speaker: msg.data.speaker,
+              text: msg.data.text,
+              isFinal: msg.data.isFinal,
+              timestamp: now,
+            };
+            if (mergeable) next[next.length - 1] = entry;
+            else next.push(entry);
             return next;
+          });
+          break;
+        }
+
+        case "audio": {
+          const turns = audioLogRef.current.turns;
+          if (turns.length === 0) turns.push([]);
+          turns[turns.length - 1].push(msg.data);
+          // Cap the retained audio so a long answer cannot grow unbounded.
+          if (turns[turns.length - 1].length > 400)
+            turns[turns.length - 1].shift();
+
+          // Map audio back to the transcript so it can be played manually in Chat
+          setTranscript((prev) => {
+            const next = [...prev];
+            for (let i = next.length - 1; i >= 0; i--) {
+              if (next[i].speaker === "agent" && next[i].type !== "tool_call") {
+                const chunks = next[i].audioChunks || [];
+                next[i] = { ...next[i], audioChunks: [...chunks, msg.data] };
+                break;
+              }
+            }
+            return next;
+          });
+
+          // Only autoplay if we are in voice mode
+          if (sessionModeRef.current !== "chat") {
+            setIsProcessing(false);
+            if (!audioCtxRef.current || audioCtxRef.current.state === "closed")
+              resetAudioContext();
+            setIsSpeaking(true);
+            enqueueBase64Audio(msg.data);
+            if (speakingTimerRef.current)
+              clearTimeout(speakingTimerRef.current);
+            const timeLeft = Math.max(
+              0,
+              nextStartTimeRef.current - audioCtxRef.current.currentTime,
+            );
+            speakingTimerRef.current = setTimeout(
+              () => setIsSpeaking(false),
+              timeLeft * 1000 + 200,
+            );
           }
-          return [...prev, entry];
-        });
-        break;
+          break;
+        }
+
+        case "clear_audio":
+          // Barge-in: drop anything queued and restart the timeline.
+          resetAudioContext();
+          setIsSpeaking(false);
+          setIsProcessing(false);
+          break;
+
+        case "clear_processing":
+          setIsProcessing(false);
+          break;
+
+        case "start":
+          if (msg.config?.conversationId)
+            setConversationId(msg.config.conversationId);
+          break;
+
+        case "tool_call_started": {
+          const startedAt = msg.timestamp || Date.now();
+          setPendingToolCalls((prev) => ({
+            ...prev,
+            [msg.toolCallId]: {
+              toolName: msg.toolName,
+              args: msg.args,
+              isFrontend: msg.isFrontend,
+              startTime: startedAt,
+            },
+          }));
+          setTranscript((prev) => {
+            const entry = {
+              type: "tool_call",
+              speaker: "agent",
+              toolName: msg.toolName,
+              toolCallId: msg.toolCallId,
+              startTime: startedAt,
+              completed: false,
+            };
+            const idx = prev.findIndex(
+              (t) => t.type === "tool_call" && t.toolCallId === msg.toolCallId,
+            );
+            if (idx >= 0) {
+              const next = [...prev];
+              next[idx] = entry;
+              return next;
+            }
+            return [...prev, entry];
+          });
+          break;
+        }
+
+        case "tool_call_completed": {
+          setTranscript((prev) =>
+            prev.map((t) =>
+              t.type === "tool_call" && t.toolCallId === msg.toolCallId
+                ? { ...t, completed: true, result: msg.result }
+                : t,
+            ),
+          );
+          setPendingToolCalls((prev) => {
+            const next = { ...prev };
+            delete next[msg.toolCallId];
+            return next;
+          });
+          break;
+        }
+
+        case "error":
+          setLastError(msg.message || "Server error");
+          setIsProcessing(false);
+          break;
+
+        default:
+          break;
       }
-
-      case 'tool_call_completed': {
-        setTranscript((prev) =>
-          prev.map((t) =>
-            t.type === 'tool_call' && t.toolCallId === msg.toolCallId
-              ? { ...t, completed: true, result: msg.result }
-              : t,
-          ),
-        );
-        setPendingToolCalls((prev) => {
-          const next = { ...prev };
-          delete next[msg.toolCallId];
-          return next;
-        });
-        break;
-      }
-
-      case 'error':
-        setLastError(msg.message || 'Server error');
-        setIsProcessing(false);
-        break;
-
-      default:
-        break;
-    }
-  }, [enqueueBase64Audio, resetAudioContext]);
+    },
+    [enqueueBase64Audio, resetAudioContext],
+  );
 
   const disconnect = useCallback(() => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       try {
-        wsRef.current.send(JSON.stringify({ type: 'session.ended' }));
+        wsRef.current.send(JSON.stringify({ type: "session.ended" }));
       } catch {
         // socket already gone
       }
@@ -325,7 +354,7 @@ export function SessionProvider({ children }) {
     }
     wsRef.current = null;
     connectedForRef.current = null;
-    setStatus('idle');
+    setStatus("idle");
   }, []);
 
   /**
@@ -334,18 +363,18 @@ export function SessionProvider({ children }) {
    * there would show a permission prompt the citizen never asked for.
    */
   const connect = useCallback(
-    async ({ language = 'en-IN', config = {}, mode = 'chat' } = {}) => {
+    async ({ language = "en-IN", config = {}, mode = "chat" } = {}) => {
       if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
         sessionModeRef.current = mode;
         return true;
       }
-      if (typeof navigator !== 'undefined' && !navigator.onLine) return false;
+      if (typeof navigator !== "undefined" && !navigator.onLine) return false;
 
-      const key = `${language}:${config.conversationId || 'new'}`;
+      const key = `${language}:${config.conversationId || "new"}`;
       connectedForRef.current = key;
       languageRef.current = language;
       sessionModeRef.current = mode;
-      setStatus('connecting');
+      setStatus("connecting");
       setLastError(null);
 
       return new Promise((resolve) => {
@@ -353,7 +382,7 @@ export function SessionProvider({ children }) {
         try {
           ws = new WebSocket(WS_URL);
         } catch (err) {
-          setStatus('error');
+          setStatus("error");
           setLastError(err.message);
           connectedForRef.current = null;
           resolve(false);
@@ -362,19 +391,22 @@ export function SessionProvider({ children }) {
         wsRef.current = ws;
 
         ws.onopen = () => {
-          setStatus('ready');
+          setStatus("ready");
           ws.send(
             JSON.stringify({
-              type: 'session.start',
+              type: "session.start",
               config: {
                 ...config,
                 language,
                 channel: mode,
-                assistantName: config.assistantName || 'Sahayak',
+                assistantName:
+                  mode === "voice" ? "Maya" : config.assistantName || "Maya",
                 firstMessage:
-                  config.firstMessage ||
-                  'Namaste! I am Sahayak, your citizen assistant. Tell me which government scheme you need help with and I will guide you through it step by step.',
-                timezone: config.timezone || 'Asia/Kolkata',
+                  mode === "voice"
+                    ? ""
+                    : config.firstMessage ||
+                      "Hi! I'm Maya, your Virtual Citizen Assistant. I can help you understand government schemes, eligibility criteria, required documents, and application procedures. How can I assist you today?",
+                timezone: config.timezone || "Asia/Kolkata",
                 deviceId: deviceRef.current.id,
               },
             }),
@@ -383,18 +415,18 @@ export function SessionProvider({ children }) {
         };
 
         ws.onmessage = (event) => {
-          if (typeof event.data === 'string') handleMessage(event.data);
+          if (typeof event.data === "string") handleMessage(event.data);
         };
 
         ws.onerror = () => {
-          setStatus('error');
-          setLastError('Connection failed');
+          setStatus("error");
+          setLastError("Connection failed");
         };
 
         ws.onclose = () => {
           if (connectedForRef.current === key) {
             connectedForRef.current = null;
-            setStatus((s) => (s === 'error' ? s : 'idle'));
+            setStatus((s) => (s === "error" ? s : "idle"));
           }
           wsRef.current = null;
         };
@@ -411,17 +443,19 @@ export function SessionProvider({ children }) {
       animationFrameRef.current = null;
     }
     if (vadCtxRef.current) {
-      vadCtxRef.current.close().catch(() => { });
+      vadCtxRef.current.close().catch(() => {});
       vadCtxRef.current = null;
     }
 
     if (recognitionRef.current) {
-      try { recognitionRef.current.abort(); } catch (e) { }
+      try {
+        recognitionRef.current.abort();
+      } catch (e) {}
       recognitionRef.current = null;
     }
 
     if (recorderRef.current) {
-      if (recorderRef.current.state === 'recording') recorderRef.current.stop();
+      if (recorderRef.current.state === "recording") recorderRef.current.stop();
       recorderRef.current = null;
     }
     if (streamRef.current) {
@@ -435,23 +469,31 @@ export function SessionProvider({ children }) {
   }, []);
 
   const startMicrophone = useCallback(async () => {
-    if (recorderRef.current?.state === 'recording') return true;
+    if (recorderRef.current?.state === "recording") return true;
     const ws = wsRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) return false;
 
-    if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
-      audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+    if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
+      audioCtxRef.current = new (
+        window.AudioContext || window.webkitAudioContext
+      )();
       nextStartTimeRef.current = audioCtxRef.current.currentTime;
     }
 
     let stream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
       });
     } catch (err) {
       setLastError(
-        err.name === 'NotAllowedError' ? 'Microphone permission denied' : 'Microphone unavailable',
+        err.name === "NotAllowedError"
+          ? "Microphone permission denied"
+          : "Microphone unavailable",
       );
       return false;
     }
@@ -472,9 +514,13 @@ export function SessionProvider({ children }) {
         // chunk dropped
       } finally {
         pendingChunks--;
-        if (isStopped && pendingChunks === 0 && ws.readyState === WebSocket.OPEN) {
+        if (
+          isStopped &&
+          pendingChunks === 0 &&
+          ws.readyState === WebSocket.OPEN
+        ) {
           setIsProcessing(true);
-          ws.send(JSON.stringify({ type: 'session.speech_stop' }));
+          ws.send(JSON.stringify({ type: "session.speech_stop" }));
         }
       }
     };
@@ -484,7 +530,7 @@ export function SessionProvider({ children }) {
       isStopped = true;
       if (pendingChunks === 0 && wsRef.current?.readyState === WebSocket.OPEN) {
         setIsProcessing(true);
-        wsRef.current.send(JSON.stringify({ type: 'session.speech_stop' }));
+        wsRef.current.send(JSON.stringify({ type: "session.speech_stop" }));
       }
     };
     recorder.start(250);
@@ -496,7 +542,8 @@ export function SessionProvider({ children }) {
     let lastReportedSilence = 0;
 
     try {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
       if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
         recognitionRef.current = recognition;
@@ -505,7 +552,7 @@ export function SessionProvider({ children }) {
         recognition.lang = languageRef.current;
         recognition.onresult = (event) => {
           if (!recognitionRef.current) return;
-          let interim = '';
+          let interim = "";
           for (let i = event.resultIndex; i < event.results.length; ++i) {
             interim += event.results[i][0].transcript;
           }
@@ -519,8 +566,13 @@ export function SessionProvider({ children }) {
             setTranscript((prev) => {
               const next = [...prev];
               const last = next[next.length - 1];
-              const entry = { speaker: 'user', text: interim, isFinal: false, timestamp: Date.now() };
-              if (last && last.speaker === 'user' && !last.isFinal) {
+              const entry = {
+                speaker: "user",
+                text: interim,
+                isFinal: false,
+                timestamp: Date.now(),
+              };
+              if (last && last.speaker === "user" && !last.isFinal) {
                 next[next.length - 1] = entry;
               } else {
                 next.push(entry);
@@ -531,7 +583,7 @@ export function SessionProvider({ children }) {
         };
         recognition.start();
       }
-    } catch (err) { }
+    } catch (err) {}
 
     // Simple VAD: Auto-stop after 2s of silence
     try {
@@ -598,40 +650,54 @@ export function SessionProvider({ children }) {
   const sendText = useCallback((text) => {
     const ws = wsRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) return false;
-    ws.send(JSON.stringify({ type: 'text.input', text }));
+    ws.send(JSON.stringify({ type: "text.input", text }));
     return true;
   }, []);
 
   const changeLanguage = useCallback((language) => {
     const ws = wsRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    ws.send(JSON.stringify({ type: 'language.change', language }));
+    ws.send(JSON.stringify({ type: "language.change", language }));
   }, []);
 
-  const completeToolCall = useCallback((toolCallId, result) => {
-    const ws = wsRef.current;
-    const toolName = pendingToolCalls[toolCallId]?.toolName;
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'tool.completed', toolName, result, toolCallId }));
-    }
-    setPendingToolCalls((prev) => {
-      const next = { ...prev };
-      delete next[toolCallId];
-      return next;
-    });
-  }, [pendingToolCalls]);
+  const completeToolCall = useCallback(
+    (toolCallId, result) => {
+      const ws = wsRef.current;
+      const toolName = pendingToolCalls[toolCallId]?.toolName;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(
+          JSON.stringify({
+            type: "tool.completed",
+            toolName,
+            result,
+            toolCallId,
+          }),
+        );
+      }
+      setPendingToolCalls((prev) => {
+        const next = { ...prev };
+        delete next[toolCallId];
+        return next;
+      });
+    },
+    [pendingToolCalls],
+  );
 
   /**
    * Sends a message, or queues it when the socket is not usable. Always
    * returns how it was handled so the caller can render the right state.
    */
   const sendOrQueue = useCallback(
-    async (text, language = 'en-IN') => {
-      if (sendText(text)) return { state: 'sent' };
-      const clientItemId = await Outbox.enqueueMessage({ conversationId, text, language });
+    async (text, language = "en-IN") => {
+      if (sendText(text)) return { state: "sent" };
+      const clientItemId = await Outbox.enqueueMessage({
+        conversationId,
+        text,
+        language,
+      });
       triggerSync(deviceRef.current.id, deviceRef.current.secret);
       await refreshOutbox();
-      return { state: 'queued', clientItemId };
+      return { state: "queued", clientItemId };
     },
     [sendText, conversationId, refreshOutbox],
   );
@@ -655,14 +721,16 @@ export function SessionProvider({ children }) {
   }, [refreshOutbox]);
 
   const hasReplayableAudio = useCallback(
-    () => (audioLogRef.current.turns[audioLogRef.current.turns.length - 1] || []).length > 0,
+    () =>
+      (audioLogRef.current.turns[audioLogRef.current.turns.length - 1] || [])
+        .length > 0,
     [],
   );
 
   const value = useMemo(
     () => ({
       status,
-      isConnected: status === 'ready',
+      isConnected: status === "ready",
       isOnline,
       isSpeaking,
       isListening,
@@ -720,13 +788,22 @@ export function SessionProvider({ children }) {
   );
 
   useEffect(() => {
-    if (sessionModeRef.current !== 'voice' || status !== 'ready') return;
+    if (sessionModeRef.current !== "voice" || status !== "ready") return;
     if (isSpeaking && isListening) {
       stopMicrophone();
     } else if (!isSpeaking && !isListening && !isProcessing) {
       startMicrophone();
     }
-  }, [isSpeaking, isListening, isProcessing, status, startMicrophone, stopMicrophone]);
+  }, [
+    isSpeaking,
+    isListening,
+    isProcessing,
+    status,
+    startMicrophone,
+    stopMicrophone,
+  ]);
 
-  return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
+  return (
+    <SessionContext.Provider value={value}>{children}</SessionContext.Provider>
+  );
 }

@@ -10,21 +10,114 @@
 // disk on the server and returns it with an ETag derived from the version, so a
 // deploy that edits a scheme is picked up without a client release.
 
-import bundled from '../data/schemes/index.json';
-import pmKisan from '../data/schemes/pm-kisan.json';
-import ayushman from '../data/schemes/ayushman-bharat-pmjay.json';
-import pmAwas from '../data/schemes/pm-awas-yojana.json';
-import rationCard from '../data/schemes/ration-card-nfsa.json';
-import aadhaar from '../data/schemes/aadhaar-services.json';
-import scholarships from '../data/schemes/student-scholarships.json';
-import ujjwala from '../data/schemes/ujjwala-yojana.json';
-import mgnrega from '../data/schemes/mgnrega.json';
+import bundled from "../data/schemes/index.json";
+import pmKisan from "../data/schemes/pm-kisan.json";
+import ayushman from "../data/schemes/ayushman-bharat-pmjay.json";
+import pmAwas from "../data/schemes/pm-awas-yojana.json";
+import rationCard from "../data/schemes/ration-card-nfsa.json";
+import aadhaar from "../data/schemes/aadhaar-services.json";
+import scholarships from "../data/schemes/student-scholarships.json";
+import ujjwala from "../data/schemes/ujjwala-yojana.json";
+import mgnrega from "../data/schemes/mgnrega.json";
 
 const BY_SLUG = new Map(
-  [pmKisan, ayushman, pmAwas, rationCard, aadhaar, scholarships, ujjwala, mgnrega].map(
-    (s) => [s.slug, s],
-  ),
+  [
+    pmKisan,
+    ayushman,
+    pmAwas,
+    rationCard,
+    aadhaar,
+    scholarships,
+    ujjwala,
+    mgnrega,
+  ].map((s) => [s.slug, s]),
 );
+
+function slugify(value) {
+  return (
+    String(value || "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "scheme"
+  );
+}
+
+const CATEGORY_ICONS = {
+  Agriculture: "🌾",
+  "Health & Wellness": "🏥",
+  Housing: "🏠",
+  "Public Distribution": "🪪",
+  Education: "🎓",
+  Energy: "🔥",
+  Employment: "👷",
+  Women: "👩",
+  Youth: "🎯",
+  Skill: "🛠️",
+  Finance: "💰",
+  default: "🏛️",
+};
+
+const CATEGORY_ACCENTS = {
+  Agriculture: "forest",
+  "Health & Wellness": "terra",
+  Housing: "sky",
+  "Public Distribution": "mustard",
+  Education: "plum",
+  Energy: "forest",
+  Employment: "sky",
+  Women: "plum",
+  Youth: "mustard",
+  Skill: "terra",
+  Finance: "forest",
+  default: "forest",
+};
+
+export function normalizeSchemeForCatalog(raw) {
+  if (!raw) return null;
+
+  const derivedName = raw.name || raw.title?.en || raw.summary?.en || "Scheme";
+  const slug = raw.slug || slugify(raw.name || derivedName);
+  const title =
+    raw.title && typeof raw.title === "object"
+      ? raw.title
+      : { en: derivedName };
+  if (!title.en) title.en = derivedName;
+
+  const description =
+    raw.description || raw.summary?.en || raw.summary || "Government scheme";
+  const summary =
+    raw.summary && typeof raw.summary === "object"
+      ? raw.summary
+      : { en: description };
+  if (!summary.en) summary.en = description;
+
+  const images = Array.isArray(raw.images)
+    ? raw.images.filter((item) => typeof item === "string" && item.trim())
+    : [];
+
+  const category = raw.category || raw.sector || "General";
+  const sector = raw.sector || category;
+
+  return {
+    ...raw,
+    id: raw.id || slug,
+    slug,
+    name: derivedName,
+    title,
+    summary,
+    description,
+    category,
+    sector,
+    icon: raw.icon || CATEGORY_ICONS[category] || CATEGORY_ICONS.default,
+    accent:
+      raw.accent || CATEGORY_ACCENTS[category] || CATEGORY_ACCENTS.default,
+    officialUrl: raw.officialUrl || raw.siteUrl || "#",
+    siteUrl: raw.siteUrl || raw.officialUrl || "#",
+    images,
+    estimatedDays: raw.estimatedDays || 30,
+  };
+}
 
 const CATALOG = {
   version: bundled.version,
@@ -54,23 +147,41 @@ export function getScheme(slug) {
  * in place, because that is the version guaranteed to work offline.
  */
 export function applyRemoteCatalog(remote) {
-  if (!remote || !Array.isArray(remote.schemes) || remote.schemes.length === 0) return false;
-  if (remote.version === cache.version) return false;
-  cache = { version: remote.version, schemes: remote.schemes };
+  const incoming = Array.isArray(remote) ? remote : remote?.schemes;
+  if (!Array.isArray(incoming) || incoming.length === 0) return false;
+
+  const nextVersion = remote?.version || "remote";
+  if (nextVersion === cache.version) return false;
+
+  cache = {
+    version: nextVersion,
+    schemes: incoming.map(normalizeSchemeForCatalog).filter(Boolean),
+  };
   return true;
 }
 
 export async function refreshCatalog(signal) {
   try {
-    const res = await fetch('/api/services/catalog', { signal, headers: { Accept: 'application/json' } });
-    if (!res.ok) {
-      console.log(`Catalog refresh endpoint returned ${res.status}, using bundled catalog`);
-      return false;
+    const endpoints = ["/api/schemes", "/api/services/catalog"];
+
+    for (const endpoint of endpoints) {
+      const res = await fetch(endpoint, {
+        signal,
+        headers: { Accept: "application/json" },
+      });
+      if (!res.ok) continue;
+
+      const data = await res.json();
+      return applyRemoteCatalog(data);
     }
-    const data = await res.json();
-    return applyRemoteCatalog(data);
+
+    console.log("Catalog refresh endpoint unavailable, using bundled catalog");
+    return false;
   } catch (error) {
-    console.log('Catalog refresh failed, using bundled catalog:', error.message);
+    console.log(
+      "Catalog refresh failed, using bundled catalog:",
+      error.message,
+    );
     return false;
   }
 }

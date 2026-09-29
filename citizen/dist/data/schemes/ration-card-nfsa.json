@@ -1,0 +1,34 @@
+{
+  "slug": "ration-card-nfsa",
+  "title": { "en": "Ration Card (NFSA)", "hi": "राशन कार्ड (NFSA)" },
+  "summary": {
+    "en": "Subsidised foodgrains (rice ₹3/kg, wheat ₹2/kg, coarse grains ₹1/kg) for eligible households under NFSA.",
+    "hi": "NFSA के तहत पात्र परिवारों के लिए रियायती खाद्यान्न (चावल ₹3/किग्रा, गेहूं ₹2/किग्रा, मोटा अनाज ₹1/किग्रा)।"
+  },
+  "icon": "🪪",
+  "accent": "forest",
+  "category": "Food Security",
+  "authority": "State Food & Civil Supplies Department",
+  "tags": ["food", "subsidy", "ration", "NFSA"],
+  "eligibility": [
+    { "text": { "en": "Priority Household (PHH) / Antyodaya Anna Yojana (AAY) as per state criteria", "hi": "राज्य मानदंडों के अनुसार प्राथमिकता परिवार (PHH) / अंत्योदय अन्न योजना (AAY)" } },
+    { "text": { "en": "Income ceiling varies by state (typically ₹1-2 lakh/year rural)", "hi": "आय सीमा राज्य अनुसार भिन्न (आमतौर पर ₹1-2 लाख/वर्ष ग्रामीण)" } },
+    { "text": { "en": "No other ration card in family name", "hi": "परिवार के नाम पर कोई अन्य राशन कार्ड नहीं" } }
+  ],
+  "documents": [
+    { "id": "aadhaar", "label": { "en": "Aadhaar Card (all members)", "hi": "आधार कार्ड (सभी सदस्य)" }, "required": true, "alternatives": [], "notes": { "en": "Mandatory for seeding", "hi": "सीडिंग के लिए अनिवार्य" } },
+    { "id": "address-proof", "label": { "en": "Address Proof", "hi": "पता प्रमाण" }, "required": true, "alternatives": ["voter-id", "electricity-bill", "water-bill", "rent-agreement"], "notes": { "en": "Proof of residence in the state", "hi": "राज्य में निवास का प्रमाण" } },
+    { "id": "income-cert", "label": { "en": "Income Certificate", "hi": "आय प्रमाण पत्र" }, "required": true, "alternatives": ["self-declaration"], "notes": { "en": "From Tehsildar / revenue officer", "hi": "तहसीलदार / राजस्व अधिकारी से" } },
+    { "id": "family-photo", "label": { "en": "Family Photograph", "hi": "परिवार फोटोग्राफ" }, "required": true, "alternatives": [], "notes": { "en": "Passport size, recent", "hi": "पासपोर्ट साइज, हाल का" } },
+    { "id": "bank-passbook", "label": { "en": "Bank Passbook (optional)", "hi": "बैंक पासबुक (वैकल्पिक)" }, "required": false, "alternatives": [], "notes": { "en": "For DBT-linked schemes", "hi": "DBT-जुड़ी योजनाओं के लिए" } }
+  ],
+  "steps": [
+    { "n": 1, "title": { "en": "Get application form", "hi": "आवेदन पत्र प्राप्त करें" }, "detail": { "en": "Download from state food portal or collect from Circle Office / CSC / ration shop.", "hi": "राज्य खाद्य पोर्टल से डाउनलोड करें या सर्किल ऑफिस / CSC / राशन दुकान से लें।" }, "where": "Online / Circle Office / CSC", "cost": "Free", "time": "10 min", "tip": { "en": "Check state portal for latest form", "hi": "नवीनतम फॉर्म के लिए राज्य पोर्टल जांचें" } },
+    { "n": 2, "title": { "en": "Submit with documents", "hi": "दस्तावेजों के साथ जमा करें" }, "detail": { "en": "Fill form, attach docs, submit at Circle Office / CSC. Get acknowledgement with application number.", "hi": "फॉर्म भरें, दस्तावेज संलग्न करें, सर्किल ऑफिस / CSC पर जमा करें। आवेदन संख्या के साथ पावती लें।" }, "where": "Circle Office / CSC", "cost": "Free", "time": "20 min", "tip": { "en": "Keep acknowledgement safely", "hi": "पावती को सुरक्षित रखें" } },
+    { "n": 3, "title": { "en": "Field verification", "hi": "क्षेत्र सत्यापन" }, "detail": { "en": "Inspector visits residence to verify family details and economic status.", "hi": "निरीक्षक निवास पर जाकर परिवार विवरण और आर्थिक स्थिति सत्यापित करता है।" }, "where": "Your residence", "cost": "Free", "time": "15-30 days", "tip": { "en": "Be available at home during verification", "hi": "सत्यापन के दौरान घर पर उपलब्ध रहें" } },
+    { "n": 4, "title": { "en": "Receive Ration Card", "hi": "राशन कार्ड प्राप्त करें" }, "detail": { "en": "Card issued (physical or digital). Collect from Circle Office / download e-ration card.", "hi": "कार्ड जारी (भौतिक या डिजिटल)। सर्किल ऑफिस से लें / ई-राशन कार्ड डाउनलोड करें।" }, "where": "Circle Office / Online", "cost": "Free", "time": "7-15 days after verification", "tip": { "en": "Link Aadhaar of all members immediately", "hi": "सभी सदस्यों का आधार तुरंत लिंक करें" } }
+  ],
+  "estimatedDays": 45,
+  "officialUrl": "https://nfsa.gov.in",
+  "updatedAt": "2026-09-26"
+}

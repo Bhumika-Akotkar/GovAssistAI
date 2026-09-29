@@ -42,9 +42,9 @@
   --radius-xl: 32px;
   --radius-pill: 999px;
 
-  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-display: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-body: "Inter", system-ui, -apple-system, sans-serif;
+  --font-display: "Instrument Serif", Georgia, serif;
+  --font-mono: "JetBrains Mono", monospace;
 
   --nav-h: 68px;
   --max-w: 1280px;
@@ -55,15 +55,15 @@
   color-scheme: light;
 }
 
-:root[data-fs='lg'] {
+:root[data-fs="lg"] {
   font-size: 112%;
 }
 
-:root[data-fs='xl'] {
+:root[data-fs="xl"] {
   font-size: 124%;
 }
 
-:root[data-contrast='high'] {
+:root[data-contrast="high"] {
   --paper: #0a0a0a;
   --paper-2: #141414;
   --paper-3: #1e1e1e;
@@ -264,26 +264,26 @@ svg {
 
 .font-devanagari:lang(hi),
 .font-devanagari:lang(mr) {
-  font-family: 'Noto Sans Devanagari', var(--font-body);
+  font-family: "Noto Sans Devanagari", var(--font-body);
 }
 .font-tamil:lang(ta) {
-  font-family: 'Noto Sans Tamil', var(--font-body);
+  font-family: "Noto Sans Tamil", var(--font-body);
 }
 .font-bengali:lang(bn),
 .font-bengali:lang(as) {
-  font-family: 'Noto Sans Bengali', var(--font-body);
+  font-family: "Noto Sans Bengali", var(--font-body);
 }
 .font-telugu:lang(te) {
-  font-family: 'Noto Sans Telugu', var(--font-body);
+  font-family: "Noto Sans Telugu", var(--font-body);
 }
 .font-kannada:lang(kn) {
-  font-family: 'Noto Sans Kannada', var(--font-body);
+  font-family: "Noto Sans Kannada", var(--font-body);
 }
 .font-gurmukhi:lang(pa) {
-  font-family: 'Noto Sans Gurmukhi', var(--font-body);
+  font-family: "Noto Sans Gurmukhi", var(--font-body);
 }
 .font-gujarati:lang(gu) {
-  font-family: 'Noto Sans Gujarati', var(--font-body);
+  font-family: "Noto Sans Gujarati", var(--font-body);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1149,8 +1149,12 @@ class ToolRegistry {
    * IMPORTANT: The tool result is intercepted by the citizen frontend which renders
    * the steps as a rich visual guide WITHOUT re-sending the full step data back through the LLM.
    */
-  injectApplicationStepsTool({ channel = "chat" } = {}) {
+  injectApplicationStepsTool({
+    channel = "chat",
+    schemeService: serviceOverride,
+  } = {}) {
     const isWhatsApp = channel === "whatsapp";
+    const isVoice = channel === "voice";
     this._builtIn.set("get_application_steps", {
       schema: {
         type: "function",
@@ -1158,7 +1162,9 @@ class ToolRegistry {
           name: "get_application_steps",
           description: isWhatsApp
             ? "Fetch the application steps for a government scheme. On WhatsApp, use the returned step data to explain the steps directly as numbered text."
-            : "Fetch the step-by-step application guide for a government scheme. The frontend will render the steps visually.",
+            : isVoice
+              ? "Fetch the application steps for a government scheme. Use only the returned facts to guide the caller through the steps aloud, one step at a time."
+              : "Fetch the step-by-step application guide for a government scheme. The frontend will render the steps visually.",
           parameters: {
             type: "object",
             properties: {
@@ -1178,9 +1184,11 @@ class ToolRegistry {
       },
       fillerKey: "generic",
       executor: async (args) => {
-        if (isWhatsApp) {
-          const { schemeService } = require("../services/SchemeService");
-          const guide = await schemeService.getSteps(args.schemeId);
+        if (isWhatsApp || isVoice) {
+          const service =
+            serviceOverride ||
+            require("../services/SchemeService").schemeService;
+          const guide = await service.getSteps(args.schemeId);
           if (!guide) {
             return {
               ok: false,
@@ -1190,6 +1198,56 @@ class ToolRegistry {
               message: `No application steps were found for ${args.schemeName}.`,
             };
           }
+
+          if (isVoice) {
+            const limitText = (value, maxLength = 500) => {
+              if (typeof value === "string") {
+                return value.length > maxLength
+                  ? `${value.slice(0, maxLength - 1).trimEnd()}…`
+                  : value;
+              }
+              if (Array.isArray(value)) {
+                return value.map((item) => limitText(item, maxLength));
+              }
+              if (value && typeof value === "object") {
+                return Object.fromEntries(
+                  Object.entries(value).map(([key, item]) => [
+                    key,
+                    limitText(item, maxLength),
+                  ]),
+                );
+              }
+              return value;
+            };
+            const allSteps = Array.isArray(guide.steps) ? guide.steps : [];
+            const steps = allSteps.slice(0, 12).map((step, index) => ({
+              step: step.step || step.n || index + 1,
+              title: limitText(step.title, 180),
+              description: limitText(step.description || step.detail, 500),
+              where: limitText(step.where, 180),
+              cost: limitText(step.cost, 180),
+              time: limitText(step.time, 180),
+              tip: limitText(step.tip, 300),
+              warning: limitText(step.warning, 300),
+              actionUrl: limitText(step.actionUrl, 500),
+              actionLabel: limitText(step.actionLabel, 120),
+            }));
+
+            return {
+              ok: true,
+              type: "application_steps",
+              schemeId: guide.schemeId,
+              schemeName: guide.schemeName || args.schemeName,
+              siteUrl: limitText(guide.siteUrl, 500),
+              totalStepCount: allSteps.length,
+              hasMoreSteps: allSteps.length > steps.length,
+              steps,
+              message: steps.length
+                ? `Application steps for ${guide.schemeName || args.schemeName} are ready. Explain one returned step at a time.`
+                : `No application steps were found for ${args.schemeName}.`,
+            };
+          }
+
           return { ok: true, type: "application_steps", ...guide };
         }
 

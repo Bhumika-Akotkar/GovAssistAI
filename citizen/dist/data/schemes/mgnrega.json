@@ -1,0 +1,32 @@
+{
+  "slug": "mgnrega",
+  "title": { "en": "MGNREGA", "hi": "मनरेगा" },
+  "summary": {
+    "en": "100 days of guaranteed wage employment per rural household per year for unskilled manual work.",
+    "hi": "प्रति ग्रामीण परिवार प्रति वर्ष 100 दिन का गारंटीकृत मजदूरी रोजगार अकुशल शारीरिक कार्य के लिए।"
+  },
+  "icon": "🛠️",
+  "accent": "forest",
+  "category": "Employment",
+  "authority": "Ministry of Rural Development",
+  "tags": ["employment", "rural", "wages", "guaranteed", "job-card"],
+  "eligibility": [
+    { "text": { "en": "Rural household with adult members (18+) willing to do unskilled manual work", "hi": "वयस्क सदस्यों (18+) वाला ग्रामीण परिवार जो अकुशल शारीरिक कार्य करने को तैयार हो" } },
+    { "text": { "en": "Job Card issued by Gram Panchayat", "hi": "ग्राम पंचायत द्वारा जारी जॉब कार्ड" } },
+    { "text": { "en": "No income/exclusion criteria — universal in rural areas", "hi": "कोई आय/बहिष्करण मानदंड नहीं — ग्रामीण क्षेत्रों में सार्वभौमिक" } }
+  ],
+  "documents": [
+    { "id": "job-card", "label": { "en": "Job Card", "hi": "जॉब कार्ड" }, "required": true, "alternatives": [], "notes": { "en": "Apply at Gram Panchayat if not having one", "hi": "यदि न हो तो ग्राम पंचायत में आवेदन करें" } },
+    { "id": "aadhaar", "label": { "en": "Aadhaar Card (for seeding)", "hi": "आधार कार्ड (सीडिंग के लिए)" }, "required": true, "alternatives": [], "notes": { "en": "Mandatory for wage payment via DBT", "hi": "DBT के माध्यम से मजदूरी भुगतान के लिए अनिवार्य" } },
+    { "id": "bank-passbook", "label": { "en": "Bank/Post Office Passbook", "hi": "बैंक/डाकघर पासबुक" }, "required": true, "alternatives": [], "notes": { "en": "Aadhaar-seeded account for wage credit", "hi": "मजदूरी जमा के लिए आधार-सीडेड खाता" } }
+  ],
+  "steps": [
+    { "n": 1, "title": { "en": "Get Job Card (if not have one)", "hi": "जॉब कार्ड प्राप्त करें (यदि न हो)" }, "detail": { "en": "Apply at Gram Panchayat with photos, Aadhaar, address proof. Card issued in 15 days.", "hi": "फोटो, आधार, पता प्रमाण के साथ ग्राम पंचायत में आवेदन करें। कार्ड 15 दिन में जारी होता है।" }, "where": "Gram Panchayat", "cost": "Free", "time": "15 days", "tip": { "en": "All adult members can be on one card", "hi": "सभी वयस्क सदस्य एक कार्ड पर हो सकते हैं" } },
+    { "n": 2, "title": { "en": "Demand work (verbal/written)", "hi": "काम की मांग करें (मौखिक/लिखित)" }, "detail": { "en": "Submit demand to Panchayat Secretary / Rozgar Sahayak / online via nrega.nic.in / app.", "hi": "पंचायत सचिव / रोजगार सहायक को मांग दें / nrega.nic.in / ऐप के माध्यम से ऑनलाइन।" }, "where": "Gram Panchayat / Online", "cost": "Free", "time": "5 min", "tip": { "en": "Get dated receipt for demand", "hi": "मांग की दिनांकित रसीद लें" } },
+    { "n": 3, "title": { "en": "Get work allotment within 15 days", "hi": "15 दिनों के भीतर कार्य आवंटन प्राप्त करें" }, "detail": { "en": "Panchayat must allot work within 15 days of demand. If not, unemployment allowance due.", "hi": "पंचायत को मांग के 15 दिनों के भीतर कार्य आवंटित करना होगा। यदि नहीं, तो बेरोजगारी भत्ता देय।" }, "where": "Worksite (within 5 km)", "cost": "Free", "time": "Up to 15 days", "tip": { "en": "Track demand status on nrega.nic.in", "hi": "nrega.nic.in पर मांग स्थिति ट्रैक करें" } },
+    { "n": 4, "title": { "en": "Work and get paid weekly", "hi": "काम करें और साप्ताहिक भुगतान पाएं" }, "detail": { "en": "Muster roll maintained at worksite. Wages paid weekly/fortnightly to bank account via DBT.", "hi": "कार्यस्थल पर मस्टर रोल रखा जाता है। मजदूरी साप्ताहिक/पाक्षिक बैंक खाते में DBT के माध्यम से।" }, "where": "Worksite", "cost": "Free (you earn wages)", "time": "Ongoing (max 100 days/year)", "tip": { "en": "Check wage slip / SMS for credit confirmation", "hi": "मजदूरी पर्ची / SMS से जमा पुष्टि जांचें" } }
+  ],
+  "estimatedDays": 15,
+  "officialUrl": "https://nrega.nic.in",
+  "updatedAt": "2026-09-26"
+}

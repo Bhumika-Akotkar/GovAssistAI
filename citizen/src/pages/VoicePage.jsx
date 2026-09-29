@@ -346,6 +346,7 @@
 // }
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { CheckCircle2, CircleHelp, FileText, Search } from "lucide-react";
 
 import { useSession } from "../hooks/useSession";
 import { useLanguage } from "../i18n/LanguageProvider";
@@ -622,20 +623,10 @@ export default function VoicePage() {
   const onToggle = useCallback(async () => {
     if (!micUsable) return;
     if (status === "idle" || status === "error") {
-      const greetings = {
-        en: "Namaste! I am Sahayak, your citizen assistant. Tell me which government scheme you need help with and I will guide you through it step by step.",
-        hi: "नमस्ते! मैं सहायक हूँ। मुझे बताएं कि आपको किस सरकारी योजना में मदद चाहिए और मैं आपको कदम-दर-कदम मार्गदर्शन करूँगा।",
-        mr: "नमस्कार! मी सहायक आहे. तुम्हाला कोणत्या सरकारी योजनेसाठी मदत हवी आहे ते सांगा आणि मी तुम्हाला टप्प्याटप्प्याने मार्गदर्शन करेन.",
-        ta: "வணக்கம்! நான் சகாயக். உங்களுக்கு எந்த அரசு திட்டத்தில் உதவி தேவை என்று சொல்லுங்கள், நான் உங்களுக்கு வழிகாட்டுகிறேன்.",
-        te: "నమస్కారం! నేను సహాయక్. మీకు ఏ ప్రభుత్వ పథకంలో సహాయం కావాలో చెప్పండి, నేను మీకు మార్గనిర్దేశం చేస్తాను.",
-        bn: "নমস্কার! আমি সহায়ক। আপনার কোন সরকারি প্রকল্পে সাহায্য প্রয়োজন তা বলুন, আমি আপনাকে গাইড করব।",
-      };
-      const baseCode = language.code.split("-")[0];
-      const greeting = greetings[baseCode] || greetings.en;
       const ok = await connect({
         language: language.code,
         mode: "voice",
-        config: { firstMessage: greeting },
+        config: {},
       });
       if (!ok) return;
     }
@@ -717,6 +708,23 @@ export default function VoicePage() {
   }
 
   /* ── Active conversation ──────────────────────────────────────────────── */
+  const transcriptEntries = Array.isArray(transcript) ? transcript : [];
+
+  const quickActions = [
+    { icon: Search, title: "योजना खोजें", caption: "अपने लिए सही योजना चुनें" },
+    {
+      icon: CheckCircle2,
+      title: "पात्रता जांचें",
+      caption: "आवेदन के लिए पात्रता देखें",
+    },
+    { icon: FileText, title: "आवेदन सहायता", caption: "आवेदन में मदद पाएं" },
+    {
+      icon: CircleHelp,
+      title: "दस्तावेज़ सहायता",
+      caption: "आवश्यक दस्तावेज़ जानें",
+    },
+  ];
+
   return (
     <div className="flex h-[calc(100vh-var(--nav-h))] flex-col bg-paper">
       <SyncBanner
@@ -726,120 +734,104 @@ export default function VoicePage() {
       />
 
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-2xl px-4 py-8 sm:py-10">
-          {/* Header */}
-          <header className="text-center">
-            <h1 className="font-display text-2xl sm:text-3xl text-ink mb-1.5">
-              {copy.title}
-            </h1>
-            <p className="mx-auto max-w-md text-sm text-ink-2">
-              {copy.subtitle}
-            </p>
-          </header>
+        <div className="mx-auto h-full max-w-[1600px] px-3 py-3 sm:px-4 xl:px-6">
+          <div className="grid h-full gap-3 lg:grid-cols-[400px_minmax(0,1fr)]">
+            <aside className="flex min-h-0 flex-col rounded-2xl border border-line bg-[#f9f7f5] p-2 shadow-sm">
+              <div className="mb-2 flex items-center justify-between px-1.5">
+                <span className="text-lg font-medium text-ink">
+                  {language.code.startsWith("hi") ? "बातचीत" : "Conversation"}
+                </span>
+                <span className="rounded-full border border-line bg-white px-2.5 py-1 text-[11px] font-medium text-ink-3">
+                  {
+                    transcriptEntries.filter(
+                      (entry) => entry.type !== "tool_call",
+                    ).length
+                  }
+                </span>
+              </div>
 
-          {/* Offline / no-voice notices */}
-          {!isOnline && (
-            <div
-              className="mt-6 rounded-xl border border-mustard/40 bg-mustard/10 p-4"
-              role="alert"
-            >
-              <h2 className="mb-1 font-medium text-mustard-2">
-                {copy.offlineTitle}
-              </h2>
-              <p className="text-sm text-ink-2">{copy.offlineBody}</p>
-              <Link
-                to="/chat"
-                className="mt-3 inline-block text-sm text-forest hover:underline min-h-[36px]"
-              >
-                {copy.goToChat}
-              </Link>
-            </div>
-          )}
+              <div className="min-h-0 flex-1 notranslate">
+                <TranscriptCard
+                  entries={transcriptEntries}
+                  languageCode={language.code}
+                />
+              </div>
+            </aside>
 
-          {isOnline && capabilitiesLoaded && !voiceAvailable && (
-            <div
-              className="mt-6 rounded-xl border border-line bg-paper-2 p-4"
-              role="alert"
-            >
-              <h2 className="mb-1 font-medium text-ink">{copy.noVoiceTitle}</h2>
-              <p className="text-sm text-ink-2">{copy.noVoiceBody}</p>
-              <Link
-                to="/chat"
-                className="mt-3 inline-block text-sm text-forest hover:underline min-h-[36px]"
-              >
-                {copy.goToChat}
-              </Link>
-            </div>
-          )}
-
-          {/* ── Hero stage (orb) — no card wrapper ── */}
-          <div className="relative mt-8">
-            {/* soft radial glow behind orb */}
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-x-0 top-0 mx-auto h-[320px] w-[320px] rounded-full bg-forest/10 blur-3xl"
-            />
-
-            <div className="relative flex flex-col items-center">
-              <VoiceStage
-                status={statusLabel}
-                isOnline={isOnline}
-                voiceAvailable={micUsable}
-                languageLabel={language.nativeLabel || language.label}
-                languageCode={language.code}
-                error={lastError}
-              >
-                <div className="flex flex-col items-center">
-                  {/* Status pill + language */}
-                  <div className="mb-6 flex flex-wrap items-center justify-center gap-2">
+            <main className="rounded-2xl border border-line/80 bg-[#f7f3ef] px-3 py-3 sm:px-4 sm:py-3">
+              <div className="flex h-full flex-col justify-between">
+                <div className="flex flex-col items-center text-center">
+                  <div className="mb-2 flex justify-center">
                     <StatusPill status={statusLabel} copy={copy} />
-                    <Pill variant="neutral">
-                      {language.nativeLabel || language.label}
-                    </Pill>
-                    {isListening && <VoiceWaves active />}
                   </div>
 
-                  {/* Orb */}
-                  <div className="flex justify-center">
-                    <Orb
-                      state={statusLabel}
-                      disabled={!micUsable}
-                      interactive={false}
-                      theme="cloud"
-                      size={280}
-                    />
-                  </div>
+                  <h1 className="font-display text-[1.65rem] leading-tight text-ink sm:text-[1.9rem]">
+                    नमस्ते! मैं आपका सहायक हूँ
+                  </h1>
+                  <p className="mt-1 max-w-xl text-xs leading-snug text-ink-2 sm:text-sm">
+                    मैं आपकी सरकारी योजनाओं, पात्रता, और प्रक्रियाओं में मदद
+                    करने के लिए यहाँ हूँ।
+                  </p>
 
-                  <Button
-                    type="button"
-                    variant={isListening ? "secondary" : "primary"}
-                    onClick={onToggle}
-                    disabled={!micUsable || status === "connecting"}
-                    aria-pressed={isListening}
-                    className="mt-5 min-w-44"
-                  >
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
+                  <div className="relative mt-2 flex w-full justify-center">
+                    <div
                       aria-hidden="true"
-                    >
-                      <rect x="9" y="2" width="6" height="12" rx="3" />
-                      <path
-                        d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
+                      className="pointer-events-none absolute h-[210px] w-[210px] rounded-full bg-forest/10 blur-3xl"
+                    />
+                    <div className="relative flex items-center justify-center">
+                      <Orb
+                        state={statusLabel}
+                        disabled={!micUsable}
+                        interactive={false}
+                        theme="cloud"
+                        size={240}
                       />
-                    </svg>
-                    {isListening ? copy.stopListening : copy.startListening}
-                  </Button>
+                    </div>
+                  </div>
 
-                  {/* Silence countdown */}
+                  <div className="mt-2 flex flex-col items-center gap-2 sm:flex-row">
+                    <Button
+                      type="button"
+                      variant={isListening ? "secondary" : "primary"}
+                      onClick={onToggle}
+                      disabled={!micUsable || status === "connecting"}
+                      aria-pressed={isListening}
+                      className="min-w-[180px] rounded-full px-4 py-2 text-sm font-semibold"
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          aria-hidden="true"
+                        >
+                          <rect x="9" y="2" width="6" height="12" rx="3" />
+                          <path
+                            d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                        {isListening ? copy.stopListening : copy.startListening}
+                      </div>
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => stopMicrophone()}
+                      disabled={!isListening && status !== "ready"}
+                      className="min-w-[120px] bg-red-500 hover:bg-red-600  text-white rounded-full px-4 py-2 text-sm font-semibold"
+                    >
+                      End call
+                    </Button>
+                  </div>
+
                   {isListening && silenceMs > 0 && (
-                    <div className="mt-6 w-full max-w-[220px] animate-in fade-in zoom-in duration-200">
+                    <div className="mt-2 w-full max-w-[220px] animate-in fade-in zoom-in duration-200">
                       <div className="mb-1.5 flex justify-between px-1 text-[11px] font-medium text-ink-2">
                         <span>Sending…</span>
                         <span>{((2000 - silenceMs) / 1000).toFixed(1)}s</span>
@@ -853,43 +845,50 @@ export default function VoicePage() {
                     </div>
                   )}
 
-                  {/* Error */}
                   {lastError && (
-                    <p className="mt-4 max-w-sm text-center text-xs text-terra">
+                    <p className="mt-2 max-w-sm text-center text-[11px] text-terra">
                       {lastError}
                     </p>
                   )}
                 </div>
-              </VoiceStage>
-            </div>
-          </div>
 
-          {/* ── Transcript — visible, unboxed ── */}
-          <section className="mt-10" aria-label="Live transcript">
-            <div className="mb-3 flex items-center gap-2">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-3">
-                Live transcript
-              </span>
-              <span className="h-px flex-1 bg-line" />
-            </div>
-            <TranscriptCard entries={transcript} languageCode={language.code} />
-          </section>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                  {quickActions.map(({ icon: Icon, title, caption }) => (
+                    <Link
+                      key={title}
+                      to="/chat"
+                      className="group rounded-xl border border-line bg-white p-2 text-center shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-md"
+                    >
+                      <div className="mx-auto mb-1 grid h-7 w-7 place-items-center rounded-lg bg-forest/10 text-forest">
+                        <Icon size={15} strokeWidth={2.2} />
+                      </div>
+                      <div className="text-xs font-semibold text-ink">
+                        {title}
+                      </div>
+                      <div className="mt-0.5 text-[10px] leading-snug text-ink-2">
+                        {caption}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
 
-          {/* ── Actions ── */}
-          <div className="mt-8 flex flex-col justify-center gap-2 sm:flex-row">
-            <Link
-              to="/chat"
-              className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full border border-line-2 px-5 py-3 text-ink-2 transition-colors hover:bg-paper-2"
-            >
-              {copy.switchToTyping}
-            </Link>
-            <Button
-              variant="secondary"
-              onClick={replayLastReply}
-              disabled={!hasReplayableAudio()}
-            >
-              {copy.repeat}
-            </Button>
+                <div className="mt-2 flex flex-col justify-center gap-2 sm:flex-row">
+                  <Link
+                    to="/chat"
+                    className="inline-flex min-h-[36px] items-center justify-center gap-2 rounded-full border border-line-2 px-4 py-2 text-sm text-ink-2 transition-colors hover:bg-paper-2"
+                  >
+                    {copy.switchToTyping}
+                  </Link>
+                  <Button
+                    variant="secondary"
+                    onClick={replayLastReply}
+                    disabled={!hasReplayableAudio()}
+                  >
+                    {copy.repeat}
+                  </Button>
+                </div>
+              </div>
+            </main>
           </div>
         </div>
       </div>

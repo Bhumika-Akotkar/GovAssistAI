@@ -1,35 +1,56 @@
-import { Suspense, lazy, useEffect } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Suspense, lazy, useEffect } from "react";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 
-import { SessionProvider } from './hooks/SessionProvider';
-import { useSession } from './hooks/useSession';
-import { LanguageProvider } from './i18n/LanguageProvider';
-import { useFontScale } from './hooks/useFontScale';
-import { Navbar } from './components/layout/Navbar';
-import { Footer } from './components/layout/Footer';
-import { ConnectionBadge } from './components/layout/ConnectionBadge';
+import { SessionProvider } from "./hooks/SessionProvider";
+import { useSession } from "./hooks/useSession";
+import { LanguageProvider } from "./i18n/LanguageProvider";
+import { useFontScale } from "./hooks/useFontScale";
+import { Navbar } from "./components/layout/Navbar";
+import { Footer } from "./components/layout/Footer";
+import { ConnectionBadge } from "./components/layout/ConnectionBadge";
 
-import HomePage from './pages/HomePage';
-import AdminLoginPage from './pages/AdminLoginPage';
-import AdminRegisterPage from './pages/AdminRegisterPage';
-import AdminSchemesPage from './pages/AdminSchemesPage';
-import AdminBaileysPage from './pages/AdminBaileysPage';
+import HomePage from "./pages/HomePage";
+import AdminLoginPage from "./pages/AdminLoginPage";
+import AdminRegisterPage from "./pages/AdminRegisterPage";
+import AdminSchemesPage from "./pages/AdminSchemesPage";
+import AdminBaileysPage from "./pages/AdminBaileysPage";
 // The chat and voice pages pull in the session hook, the outbox, and the whole
 // audio pipeline. None of that is needed to read the home page, which is the
 // one a returning citizen hits first — so keep it out of the initial bundle.
-const ChatPage = lazy(() => import('./pages/ChatPage'));
-const VoicePage = lazy(() => import('./pages/VoicePage'));
-const SyncStatusPage = lazy(() => import('./pages/SyncStatusPage'));
-const HelpPage = lazy(() => import('./pages/HelpPage'));
-const LoginPage = lazy(() => import('./pages/LoginPage'));
+const ChatPage = lazy(() => import("./pages/ChatPage"));
+const VoicePage = lazy(() => import("./pages/VoicePage"));
+const SyncStatusPage = lazy(() => import("./pages/SyncStatusPage"));
+const HelpPage = lazy(() => import("./pages/HelpPage"));
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const WhatsAppContactPage = lazy(() => import("./pages/WhatsAppContactPage"));
 
 function RouteFallback() {
   return (
-    <div className="flex items-center justify-center py-32" role="status" aria-live="polite">
+    <div
+      className="flex items-center justify-center py-32"
+      role="status"
+      aria-live="polite"
+    >
       <div className="flex items-center gap-2 text-ink-3">
-        <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        <svg
+          className="animate-spin w-5 h-5"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+            fill="none"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+          />
         </svg>
         <span>Loading…</span>
       </div>
@@ -50,7 +71,7 @@ function AccessibilityControls() {
 
   useEffect(() => {
     const root = document.documentElement;
-    if (scale === 'normal') delete root.dataset.fs;
+    if (scale === "normal") delete root.dataset.fs;
     else root.dataset.fs = scale;
   }, [scale]);
 
@@ -67,7 +88,8 @@ function AccessibilityControls() {
         type="button"
         onClick={() => {
           const root = document.documentElement;
-          root.dataset.contrast = root.dataset.contrast === 'high' ? '' : 'high';
+          root.dataset.contrast =
+            root.dataset.contrast === "high" ? "" : "high";
         }}
         className="px-3 py-2 min-h-[44px] rounded-lg border border-line text-sm text-ink"
       >
@@ -171,15 +193,28 @@ export default function App() {
               </Layout>
             }
           />
+          <Route
+            path="/whatsapp"
+            element={
+              <Layout>
+                <Suspense fallback={<RouteFallback />}>
+                  <WhatsAppContactPage />
+                </Suspense>
+              </Layout>
+            }
+          />
           {/* Old paths from the mockup's DOM-based nav; keep them working. */}
-          <Route path="/applications" element={<Navigate to="/sync" replace />} />
-          
+          <Route
+            path="/applications"
+            element={<Navigate to="/sync" replace />}
+          />
+
           {/* Admin Routes */}
           <Route path="/admin/register" element={<AdminRegisterPage />} />
           <Route path="/admin/login" element={<AdminLoginPage />} />
           <Route path="/admin/schemes" element={<AdminSchemesPage />} />
           <Route path="/admin/baileys" element={<AdminBaileysPage />} />
-          
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </SessionProvider>

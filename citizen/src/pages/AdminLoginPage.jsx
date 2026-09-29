@@ -1,32 +1,33 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { ArrowRight, RefreshCw } from "lucide-react";
+import { AdminAuthShell } from "../components/layout/AdminAuthShell";
 
-const API = 'http://localhost:8083';
+const API = "http://localhost:8083";
 
 export default function AdminLoginPage() {
-  const [step, setStep] = useState('phone'); // 'phone' | 'otp'
-  const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
-  const [error, setError] = useState('');
+  const [step, setStep] = useState("phone"); // 'phone' | 'otp'
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleRequestOtp = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
     try {
       const res = await fetch(`${API}/api/auth/request-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone }),
-        credentials: 'include',
+        credentials: "include",
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to send OTP');
-      setStep('otp');
+      if (!res.ok) throw new Error(data.error || "Failed to send OTP");
+      setStep("otp");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -36,24 +37,26 @@ export default function AdminLoginPage() {
 
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
     try {
       const res = await fetch(`${API}/api/auth/verify-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone, otp }),
-        credentials: 'include',
+        credentials: "include",
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Invalid OTP');
-      if (data.user?.role !== 'admin') {
-        throw new Error('Access denied. This account does not have admin privileges.');
+      if (!res.ok) throw new Error(data.error || "Invalid OTP");
+      if (data.user?.role !== "admin") {
+        throw new Error(
+          "Access denied. This account does not have admin privileges.",
+        );
       }
       // Persist admin session in localStorage
-      localStorage.setItem('admin_token', data.token);
-      localStorage.setItem('admin_user', JSON.stringify(data.user));
-      navigate('/admin/schemes');
+      localStorage.setItem("admin_token", data.token);
+      localStorage.setItem("admin_user", JSON.stringify(data.user));
+      navigate("/admin/schemes");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -62,68 +65,139 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-paper p-4">
-      <Card className="w-full max-w-md p-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-ink">Admin Login</h1>
-          <p className="text-ink-2 text-sm mt-1">Enter your registered phone number to receive an OTP</p>
+    <AdminAuthShell
+      eyebrow={step === "phone" ? "Administrator access" : "Phone verification"}
+      title={step === "phone" ? "Admin sign in" : "Verify OTP"}
+      description={
+        step === "phone"
+          ? "Enter your registered phone number to receive a one-time password."
+          : `We sent a 6-digit code to ${phone}.`
+      }
+      footer={
+        <p className="text-[11px] text-ink-3">
+          Need an admin account?{" "}
+          <Link
+            to="/admin/register"
+            className="font-semibold text-forest hover:underline"
+          >
+            Register
+          </Link>
+        </p>
+      }
+    >
+      <div className="mb-7 flex items-center gap-2">
+        <div
+          className={`h-1 flex-1 rounded-full ${step === "phone" || step === "otp" ? "bg-forest" : "bg-line"}`}
+        />
+        <div
+          className={`h-1 flex-1 rounded-full ${step === "otp" ? "bg-forest" : "bg-line"}`}
+        />
+      </div>
+
+      {error && (
+        <div className="mb-5 flex items-start gap-2.5 rounded-xl border border-danger/30 bg-danger/5 px-4 py-3">
+          <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-danger/15 text-[11px] font-bold text-danger">
+            !
+          </span>
+          <p className="text-xs text-danger" role="alert">
+            {error}
+          </p>
         </div>
+      )}
 
-        {error && (
-          <div className="bg-danger/10 text-danger p-3 rounded-lg mb-4 text-sm">{error}</div>
-        )}
-
-        {step === 'phone' ? (
-          <form onSubmit={handleRequestOtp} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-ink mb-2">Phone Number</label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
-                className="w-full px-4 py-2 border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-forest"
-                placeholder="+91 9876543210"
-                required
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Sending OTP…' : 'Send OTP'}
-            </Button>
-          </form>
-        ) : (
-          <form onSubmit={handleVerifyOtp} className="space-y-4">
-            <div className="bg-forest/5 border border-forest/20 rounded-lg p-3 text-sm text-forest">
-              OTP sent to <strong>{phone}</strong>. Use <strong>123456</strong> (demo mode).
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-ink mb-2">Enter OTP</label>
-              <input
-                type="text"
-                value={otp}
-                onChange={e => setOtp(e.target.value)}
-                className="w-full px-4 py-3 border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-forest text-2xl tracking-widest text-center font-mono"
-                placeholder="123456"
-                maxLength={6}
-                required
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Verifying…' : 'Verify & Login'}
-            </Button>
-            <button type="button" onClick={() => { setStep('phone'); setOtp(''); setError(''); }}
-              className="w-full text-sm text-ink-2 hover:text-forest">
-              ← Change number
-            </button>
-          </form>
-        )}
-
-        <div className="mt-6 text-center">
-          <button type="button" onClick={() => navigate('/')}
-            className="text-sm text-ink-2 hover:text-forest">
-            ← Back to Home
+      {step === "phone" ? (
+        <form onSubmit={handleRequestOtp} className="space-y-5">
+          <div>
+            <label
+              htmlFor="admin-phone"
+              className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink-3"
+            >
+              Phone number
+            </label>
+            <input
+              id="admin-phone"
+              type="tel"
+              inputMode="numeric"
+              autoComplete="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="w-full rounded-xl border border-line bg-paper/50 px-4 py-3 text-sm text-ink outline-none transition focus:border-forest focus:bg-white focus:ring-2 focus:ring-forest/15"
+              placeholder="+91 9876543210"
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-forest py-3 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-forest-2 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loading ? (
+              <>
+                <RefreshCw size={15} className="animate-spin" /> Sending OTP…
+              </>
+            ) : (
+              <>
+                Send OTP <ArrowRight size={15} />
+              </>
+            )}
           </button>
-        </div>
-      </Card>
-    </div>
+        </form>
+      ) : (
+        <form onSubmit={handleVerifyOtp} className="space-y-5">
+          <div className="rounded-xl border border-forest/20 bg-forest/5 px-4 py-3 text-xs text-forest">
+            OTP sent to <strong>{phone}</strong>. Demo OTP:{" "}
+            <strong>123456</strong>.
+          </div>
+          <div>
+            <label
+              htmlFor="admin-otp"
+              className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink-3"
+            >
+              Enter 6-digit code
+            </label>
+            <input
+              id="admin-otp"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              value={otp}
+              onChange={(e) =>
+                setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+              }
+              className="w-full rounded-xl border border-line bg-paper/50 px-4 py-3 text-center font-mono text-lg font-semibold tracking-[0.35em] text-ink outline-none transition focus:border-forest focus:bg-white focus:ring-2 focus:ring-forest/15"
+              placeholder="••••••"
+              maxLength={6}
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-forest py-3 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-forest-2 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loading ? (
+              <>
+                <RefreshCw size={15} className="animate-spin" /> Verifying…
+              </>
+            ) : (
+              <>
+                Verify &amp; login <ArrowRight size={15} />
+              </>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setStep("phone");
+              setOtp("");
+              setError("");
+            }}
+            className="w-full text-center text-xs font-medium text-ink-3 transition hover:text-forest"
+          >
+            ← Change number
+          </button>
+        </form>
+      )}
+    </AdminAuthShell>
   );
 }

@@ -31,6 +31,27 @@ const {
 } = require("../modules/i18n/languageRegistry");
 const { EligibilityFlowManager } = require("./EligibilityFlowManager");
 const { schemeService } = require("./SchemeService");
+const { toSpeechText } = require("../utils/speechText");
+
+const VOICE_GREETINGS = {
+  en: "Hello! I'm Maya, your citizen assistant. I can help you understand government schemes, check eligibility, find required documents, and learn how to apply. What would you like help with today?",
+  hi: "नमस्ते, मैं माया हूँ। मैं सरकारी योजनाओं, पात्रता, ज़रूरी दस्तावेज़ों और आवेदन की प्रक्रिया समझने में आपकी मदद करूँगी। आज आपको किस बारे में मदद चाहिए?",
+  mr: "नमस्कार, मी माया आहे. सरकारी योजना, पात्रता, आवश्यक कागदपत्रे आणि अर्जाची प्रक्रिया समजून घेण्यासाठी मी तुम्हाला टप्प्याटप्प्याने मदत करेन. आज तुम्हाला कशाबद्दल मदत हवी आहे?",
+  ta: "வணக்கம், நான் மாயா. அரசு திட்டங்கள், தகுதி, தேவையான ஆவணங்கள் மற்றும் விண்ணப்பிக்கும் முறையைப் புரிந்துகொள்ள படிப்படியாக உதவுகிறேன். இன்று உங்களுக்கு என்ன உதவி வேண்டும்?",
+  te: "నమస్కారం, నేను మాయా. ప్రభుత్వ పథకాలు, అర్హత, అవసరమైన పత్రాలు, దరఖాస్తు విధానాన్ని అర్థం చేసుకోవడంలో దశలవారీగా సహాయం చేస్తాను. మీకు ఏ సహాయం కావాలి?",
+  bn: "নমস্কার, আমি মায়া। সরকারি প্রকল্প, যোগ্যতা, প্রয়োজনীয় নথি এবং আবেদন প্রক্রিয়া বুঝতে ধাপে ধাপে সাহায্য করব। আজ কীভাবে সাহায্য করতে পারি?",
+  gu: "નમસ્તે, હું માયા છું. સરકારી યોજનાઓ, પાત્રતા, જરૂરી દસ્તાવેજો અને અરજી કરવાની રીત સમજવામાં હું તમને પગલું-દર-પગલું મદદ કરીશ. આજે તમને શેમાં મદદ જોઈએ?",
+  kn: "ನಮಸ್ಕಾರ, ನಾನು ಮಾಯಾ. ಸರ್ಕಾರಿ ಯೋಜನೆಗಳು, ಅರ್ಹತೆ, ಅಗತ್ಯ ದಾಖಲೆಗಳು ಮತ್ತು ಅರ್ಜಿ ವಿಧಾನವನ್ನು ಅರ್ಥಮಾಡಿಕೊಳ್ಳಲು ಹಂತ ಹಂತವಾಗಿ ಸಹಾಯ ಮಾಡುತ್ತೇನೆ. ಇಂದು ನಿಮಗೆ ಯಾವ ಸಹಾಯ ಬೇಕು?",
+  ml: "നമസ്കാരം, ഞാൻ മായ. സർക്കാർ പദ്ധതികൾ, യോഗ്യത, ആവശ്യമായ രേഖകൾ, അപേക്ഷിക്കുന്ന രീതി എന്നിവ മനസ്സിലാക്കാൻ ഘട്ടംഘട്ടമായി സഹായിക്കാം. ഇന്ന് എന്തിലാണ് സഹായം വേണ്ടത്?",
+  pa: "ਸਤ ਸ੍ਰੀ ਅਕਾਲ, ਮੈਂ ਮਾਇਆ ਹਾਂ। ਸਰਕਾਰੀ ਯੋਜਨਾਵਾਂ, ਯੋਗਤਾ, ਲੋੜੀਂਦੇ ਦਸਤਾਵੇਜ਼ ਅਤੇ ਅਰਜ਼ੀ ਦੀ ਪ੍ਰਕਿਰਿਆ ਸਮਝਣ ਵਿੱਚ ਮੈਂ ਤੁਹਾਡੀ ਕਦਮ-ਦਰ-ਕਦਮ ਮਦਦ ਕਰਾਂਗੀ। ਅੱਜ ਤੁਹਾਨੂੰ ਕਿਸ ਬਾਰੇ ਮਦਦ ਚਾਹੀਦੀ ਹੈ?",
+  or: "ନମସ୍କାର, ମୁଁ ମାୟା। ସରକାରୀ ଯୋଜନା, ଯୋଗ୍ୟତା, ଆବଶ୍ୟକ କାଗଜପତ୍ର ଏବଂ ଆବେଦନ ପ୍ରକ୍ରିୟା ବୁଝିବାରେ ମୁଁ ଆପଣଙ୍କୁ ପଦକ୍ଷେପ ଅନୁସାରେ ସାହାଯ୍ୟ କରିବି। ଆଜି କେଉଁ ବିଷୟରେ ସାହାଯ୍ୟ ଦରକାର?",
+  as: "নমস্কাৰ, মই মায়া। চৰকাৰী আঁচনি, যোগ্যতা, প্ৰয়োজনীয় নথি আৰু আবেদন প্ৰক্ৰিয়া বুজিবলৈ মই আপোনাক ধাপে ধাপে সহায় কৰিম। আজি আপোনাক কিহৰ সহায় লাগে?",
+};
+
+function getVoiceGreeting(language) {
+  const baseLanguage = (language || "en").split("-")[0].toLowerCase();
+  return VOICE_GREETINGS[baseLanguage] || VOICE_GREETINGS.en;
+}
 
 class ConversationManager extends EventEmitter {
   constructor(channelAdapter, providerConfig = null) {
@@ -187,20 +208,25 @@ class ConversationManager extends EventEmitter {
       console.error("[ConversationManager] STT Error:", err);
     });
 
-    this.llm.on("llm_token", (token) => {
-      this.tts.feedText(token);
-    });
+    // Wait for the completed response so TTS and the transcript can use the
+    // exact same normalized text. Streaming raw tokens could speak markdown
+    // or formatting characters that the final transcript later hides.
+    this.llm.on("llm_token", () => {});
 
     this.llm.on("llm_reply_complete", async (fullReply) => {
-      this.transcript.push({ role: "assistant", content: fullReply });
+      const spokenText = toSpeechText(fullReply);
+      if (!spokenText) return;
+
+      this.transcript.push({ role: "assistant", content: spokenText });
       this.sendToClient({
         event: "transcript",
-        data: { text: fullReply, isFinal: true, speaker: "agent" },
+        data: { text: spokenText, isFinal: true, speaker: "agent" },
       });
+      this.tts.feedText(spokenText);
       this.tts.flush();
 
       if (this.conversationId) {
-        this.persistMessage("assistant", fullReply, this.language).catch((e) =>
+        this.persistMessage("assistant", spokenText, this.language).catch((e) =>
           console.error(
             "[ConversationManager] Failed to persist assistant message:",
             e,
@@ -230,7 +256,7 @@ class ConversationManager extends EventEmitter {
           } catch (e) {}
 
           const isLast = i === toolCallEntries.length - 1;
-          const preamble = i === 0 ? fullReply : "";
+          const preamble = i === 0 ? toSpeechText(fullReply) : "";
 
           await this.toolExecutor.handle(
             tc.name,
@@ -259,6 +285,8 @@ class ConversationManager extends EventEmitter {
     this.language = language;
     this.conversationId = config.conversationId || null;
     this.deviceId = config.deviceId || null;
+    const channel =
+      provider === "whatsapp" ? "whatsapp" : config.channel || "voice";
 
     if (this.conversationId) {
       await this.rehydrateConversation(this.conversationId);
@@ -314,7 +342,7 @@ class ConversationManager extends EventEmitter {
       timezone: config.timezone,
       language: this.language,
       businessName: config.businessName,
-      dataFields: config.dataToCollect || [],
+      dataFields: channel === "voice" ? [] : config.dataToCollect || [],
     });
 
     if (config.customTools && Array.isArray(config.customTools)) {
@@ -330,8 +358,6 @@ class ConversationManager extends EventEmitter {
       }
     }
 
-    const channel =
-      provider === "whatsapp" ? "whatsapp" : config.channel || "voice";
     const fullPrompt =
       provider === "whatsapp" && config.systemPrompt
         ? config.systemPrompt
@@ -341,14 +367,20 @@ class ConversationManager extends EventEmitter {
             channel,
           });
 
-    if (config.dataToCollect && config.dataToCollect.length > 0) {
+    if (
+      channel !== "voice" &&
+      config.dataToCollect &&
+      config.dataToCollect.length > 0
+    ) {
       this.registry.injectDataCollectionTool(config.dataToCollect);
     }
 
-    this.registry.injectInternalCrmTools();
+    if (channel !== "voice") {
+      this.registry.injectInternalCrmTools();
+    }
     this.registry.injectSchemeSearchTool();
-    if (provider === "whatsapp") {
-      this.registry.injectApplicationStepsTool({ channel: "whatsapp" });
+    if (channel === "voice" || provider === "whatsapp") {
+      this.registry.injectApplicationStepsTool({ channel });
     }
     this.registry.injectEligibilityTools({
       getFlowManager: () => this.eligibilityFlow,
@@ -365,8 +397,10 @@ class ConversationManager extends EventEmitter {
     if (!this.conversationId && !config.skipGreeting) {
       const assistantName = config.assistantName || DEFAULT_ASSISTANT_NAME;
       const greeting =
-        config.firstMessage ||
-        `Hi, thanks for calling! This is ${assistantName}, you've reached our reception desk. How can I help you today?`;
+        channel === "voice"
+          ? getVoiceGreeting(language)
+          : config.firstMessage ||
+            `Hi, thanks for calling! This is ${assistantName}, you've reached our reception desk. How can I help you today?`;
       this.transcript.push({ role: "assistant", content: greeting });
       this.sendToClient({
         event: "transcript",
