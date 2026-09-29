@@ -1,0 +1,37 @@
+{
+  "slug": "student-scholarships",
+  "title": { "en": "Student Scholarships (NSP)", "hi": "छात्र छात्रवृत्तियां (NSP)" },
+  "summary": {
+    "en": "Central and state scholarships for pre-matric, post-matric, merit-cum-means, and minority students via National Scholarship Portal.",
+    "hi": "राष्ट्रीय छात्रवृत्ति पोर्टल के माध्यम से प्री-मैट्रिक, पोस्ट-मैट्रिक, योग्यता-सह-साधन, और अल्पसंख्यक छात्रों के लिए केंद्रीय और राज्य छात्रवृत्तियां।"
+  },
+  "icon": "🎓",
+  "accent": "plum",
+  "category": "Education",
+  "authority": "Ministry of Education / State Governments",
+  "tags": ["education", "scholarship", "students", "NSP"],
+  "eligibility": [
+    { "text": { "en": "Indian national studying in recognised institution in India", "hi": "भारत में मान्यता प्राप्त संस्थान में पढ़ने वाला भारतीय नागरिक" } },
+    { "text": { "en": "Family income ceiling varies by scheme (e.g. ₹2.5 lakh for post-matric)", "hi": "पारिवारिक आय सीमा योजनानुसार भिन्न (जैसे पोस्ट-मैट्रिक के लिए ₹2.5 लाख)" } },
+    { "text": { "en": "Minimum attendance % as per scheme guidelines", "hi": "योजना दिशानिर्देशों के अनुसार न्यूनतम उपस्थिति %" } },
+    { "text": { "en": "Not availing any other scholarship for same purpose", "hi": "उसी उद्देश्य के लिए कोई अन्य छात्रवृत्ति नहीं ले रहा" } }
+  ],
+  "documents": [
+    { "id": "aadhaar", "label": { "en": "Aadhaar Card", "hi": "आधार कार्ड" }, "required": true, "alternatives": [], "notes": { "en": "Mandatory for DBT", "hi": "DBT के लिए अनिवार्य" } },
+    { "id": "income-cert", "label": { "en": "Income Certificate", "hi": "आय प्रमाण पत्र" }, "required": true, "alternatives": [], "notes": { "en": "From competent authority (Tehsildar)", "hi": "सक्षम प्राधिकारी (तहसीलदार) से" } },
+    { "id": "caste-cert", "label": { "en": "Caste Certificate (if applicable)", "hi": "जाति प्रमाण पत्र (यदि लागू)" }, "required": false, "alternatives": [], "notes": { "en": "For SC/ST/OBC schemes", "hi": "SC/ST/OBC योजनाओं के लिए" } },
+    { "id": "marksheet", "label": { "en": "Previous Year Marksheet", "hi": "पिछले वर्ष की मार्कशीट" }, "required": true, "alternatives": [], "notes": { "en": "Self-attested", "hi": "स्व-सत्यापित" } },
+    { "id": "bank-passbook", "label": { "en": "Bank Passbook (Aadhaar-seeded)", "hi": "बैंक पासबुक (आधार-सीडेड)" }, "required": true, "alternatives": ["cancelled-cheque"], "notes": { "en": "For scholarship credit", "hi": "छात्रवृत्ति जमा के लिए" } },
+    { "id": "bonafide", "label": { "en": "Bonafide Certificate", "hi": "बोनाफाइड प्रमाण पत्र" }, "required": true, "alternatives": [], "notes": { "en": "From current institution", "hi": "वर्तमान संस्थान से" } },
+    { "id": "domicile", "label": { "en": "Domicile Certificate", "hi": "अधिवास प्रमाण पत्र" }, "required": true, "alternatives": [], "notes": { "en": "For state-specific schemes", "hi": "राज्य-विशिष्ट योजनाओं के लिए" } }
+  ],
+  "steps": [
+    { "n": 1, "title": { "en": "Register on NSP", "hi": "NSP पर पंजीकरण करें" }, "detail": { "en": "Visit scholarships.gov.in → 'New Registration' → fill details → verify mobile/email → get Application ID.", "hi": "scholarships.gov.in → 'नया पंजीकरण' → विवरण भरें → मोबाइल/ईमेल सत्यापित करें → आवेदन ID प्राप्त करें।" }, "where": "Online (scholarships.gov.in)", "cost": "Free", "time": "15 min", "tip": { "en": "Use own mobile/email for OTP", "hi": "OTP के लिए अपना मोबाइल/ईमेल उपयोग करें" } },
+    { "n": 2, "title": { "en": "Login and fill application form", "hi": "लॉगिन करके आवेदन पत्र भरें" }, "detail": { "en": "Select scheme → fill personal/academic/bank details → upload documents → preview → submit.", "hi": "योजना चुनें → व्यक्तिगत/शैक्षणिक/बैंक विवरण भरें → दस्तावेज अपलोड करें → पूर्वावलोकन → सबमिट।" }, "where": "Online (NSP)", "cost": "Free", "time": "30-45 min", "tip": { "en": "Keep scanned docs ready (PDF/JPG, <200KB each)", "hi": "स्कैन किए गए दस्तावेज तैयार रखें (PDF/JPG, प्रत्येक <200KB)" } },
+    { "n": 3, "title": { "en": "Institute verification", "hi": "संस्थान सत्यापन" }, "detail": { "en": "Institute nodal officer verifies and forwards application to District/State level.", "hi": "संस्थान नोडल अधिकारी सत्यापित करके आवेदन को जिला/राज्य स्तर पर अग्रेषित करता है।" }, "where": "Institute (automatic after submit)", "cost": "Free", "time": "15-30 days", "tip": { "en": "Follow up with institute nodal officer", "hi": "संस्थान नोडल अधिकारी से फॉलोअप करें" } },
+    { "n": 4, "title": { "en": "State/Central sanction & disbursal", "hi": "राज्य/केंद्रीय मंजूरी और वितरण" }, "detail": { "en": "Approved applications get scholarship credited to bank account via PFMS/DBT.", "hi": "स्वीकृत आवेदनों को PFMS/DBT के माध्यम से बैंक खाते में छात्रवृत्ति जमा होती है।" }, "where": "Automatic (PFMS/DBT)", "cost": "Free", "time": "30-90 days after verification", "tip": { "en": "Check status on NSP dashboard regularly", "hi": "NSP डैशबोर्ड पर नियमित रूप से स्थिति जांचें" } }
+  ],
+  "estimatedDays": 120,
+  "officialUrl": "https://scholarships.gov.in",
+  "updatedAt": "2026-09-26"
+}

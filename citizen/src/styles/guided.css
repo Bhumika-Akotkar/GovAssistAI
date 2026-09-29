@@ -1,0 +1,185 @@
+/* ============================================================
+   GUIDED APPLICATION WORKSPACE
+   The one place the full-width chat turns into a split workspace.
+   Everything here animates width/flex-basis + opacity + transform
+   only, so the chat keeps its own scroll containers and nothing
+   reflows mid-transition.
+   ============================================================ */
+
+.guided-split {
+  --guided-chat: 35%;
+  --guided-browser: 65%;
+  --guided-dur: 620ms;
+  --guided-dur-soft: 500ms;
+
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* The chat column is the same markup as before — only its share of the row
+   changes. A rail sits inside it and collapses out of the way. */
+.guided-split__chat {
+  flex: 0 0 100%;
+  min-width: 0;
+  display: flex;
+  overflow: hidden;
+  transition: flex-basis var(--guided-dur) var(--ease);
+}
+
+.guided-split__browser {
+  flex: 0 0 0%;
+  min-width: 0;
+  display: flex;
+  opacity: 0;
+  transform: translateX(28px);
+  overflow: hidden;
+  pointer-events: none;
+  transition:
+    flex-basis var(--guided-dur-soft) var(--ease),
+    opacity 240ms var(--ease),
+    transform var(--guided-dur-soft) var(--ease);
+}
+
+/* Open: the browser arrives a beat after the chat starts moving, which is
+   what makes it read as one gesture rather than two. */
+.guided-split[data-guided='true'] .guided-split__chat {
+  flex-basis: var(--guided-chat);
+}
+
+.guided-split[data-guided='true'] .guided-split__browser {
+  flex-basis: var(--guided-browser);
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  transition:
+    flex-basis var(--guided-dur) var(--ease),
+    opacity 320ms var(--ease) 130ms,
+    transform var(--guided-dur) var(--ease);
+}
+
+/* The browser card: a small amount of depth, no glass, no gradients. */
+.guided-browser-card {
+  flex: 1 1 auto;
+  min-width: 0;
+  transform: scale(0.994);
+  transform-origin: 100% 50%;
+  transition: transform var(--guided-dur) var(--ease);
+}
+
+.guided-split[data-guided='true'] .guided-browser-card {
+  transform: scale(1);
+}
+
+/* Below the split breakpoint a 35/65 split would squeeze the chat into a
+   column of three words, so the two panels take turns instead. */
+@media (max-width: 1023.98px) {
+  .guided-split {
+    --guided-chat: 44%;
+    --guided-browser: 56%;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .guided-split[data-guided='true'] .guided-split__chat {
+    flex-basis: 100%;
+  }
+
+  .guided-split[data-guided='true'] .guided-split__browser {
+    flex-basis: 0%;
+    opacity: 0;
+    transform: translateX(18px);
+  }
+
+  .guided-split[data-guided='true'][data-pane='chat'] .guided-split__browser {
+    flex-basis: 0%;
+    opacity: 0;
+    transform: translateX(18px);
+  }
+
+  .guided-split[data-guided='true'][data-pane='browser'] .guided-split__chat {
+    flex-basis: 0%;
+  }
+
+  .guided-split[data-guided='true'][data-pane='browser'] .guided-split__browser {
+    flex-basis: 100%;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+    transition:
+      flex-basis var(--guided-dur) var(--ease),
+      opacity 260ms var(--ease),
+      transform var(--guided-dur) var(--ease);
+  }
+}
+
+/* The catalog rail is a nice-to-have next to a 35% chat column; in guided
+   mode the progress card inside the thread takes over that job. */
+.guided-rail {
+  width: 18rem;
+  min-width: 0;
+  transition:
+    width var(--guided-dur-soft) var(--ease),
+    padding var(--guided-dur-soft) var(--ease),
+    opacity 260ms var(--ease);
+}
+
+.guided-rail[data-collapsed='true'] {
+  width: 0;
+  padding-left: 0;
+  padding-right: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Header band and launcher band collapse instead of being unmounted, so
+   entering and leaving guided mode never snaps. */
+.guided-collapse {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition:
+    max-height 440ms var(--ease),
+    opacity 240ms var(--ease);
+}
+
+.guided-collapse[data-visible='true'] {
+  max-height: 200px;
+  opacity: 1;
+}
+
+.guided-collapse--slim {
+  transition:
+    max-height 340ms var(--ease),
+    opacity 200ms var(--ease);
+}
+
+.guided-collapse--slim[data-visible='true'] {
+  max-height: 96px;
+}
+
+.guided-collapse--tall {
+  transition:
+    max-height 460ms var(--ease),
+    opacity 260ms var(--ease);
+}
+
+.guided-collapse--tall[data-visible='true'] {
+  max-height: 720px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guided-split,
+  .guided-split__chat,
+  .guided-split__browser,
+  .guided-browser-card,
+  .guided-rail,
+  .guided-collapse,
+  .guided-collapse--slim,
+  .guided-collapse--tall {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+}

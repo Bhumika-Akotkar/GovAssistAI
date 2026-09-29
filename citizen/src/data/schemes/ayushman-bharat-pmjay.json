@@ -1,0 +1,32 @@
+{
+  "slug": "ayushman-bharat-pmjay",
+  "title": { "en": "Ayushman Bharat PM-JAY", "hi": "आयुष्मान भारत PM-JAY" },
+  "summary": {
+    "en": "Health insurance cover of ₹5 lakh/family/year for secondary and tertiary care hospitalization.",
+    "hi": "द्वितीयक और तृतीयक देखभाल अस्पताल में भर्ती के लिए ₹5 लाख/परिवार/वर्ष का स्वास्थ्य बीमा कवर।"
+  },
+  "icon": "🏥",
+  "accent": "terra",
+  "category": "Health",
+  "authority": "National Health Authority (NHA)",
+  "tags": ["health", "insurance", "hospitalization", "cashless"],
+  "eligibility": [
+    { "text": { "en": "Families listed in SECC 2011 database (rural/urban)", "hi": "SECC 2011 डेटाबेस में सूचीबद्ध परिवार (ग्रामीण/शहरी)" } },
+    { "text": { "en": "No cap on family size or age", "hi": "परिवार के आकार या उम्र की कोई सीमा नहीं" } },
+    { "text": { "en": "Pre-existing conditions covered from day 1", "hi": "पहले से मौजूद स्थितियां दिन 1 से कवर" } }
+  ],
+  "documents": [
+    { "id": "aadhaar", "label": { "en": "Aadhaar Card", "hi": "आधार कार्ड" }, "required": true, "alternatives": [], "notes": { "en": "For e-KYC verification at empanelled hospital", "hi": "पैनलबद्ध अस्पताल में ई-केवाईसी सत्यापन के लिए" } },
+    { "id": "ration-card", "label": { "en": "Ration Card", "hi": "राशन कार्ड" }, "required": false, "alternatives": ["voter-id", "family-id"], "notes": { "en": "Helps verify family unit", "hi": "परिवार इकाई सत्यापित करने में मदद करता है" } },
+    { "id": "mobile", "label": { "en": "Registered Mobile Number", "hi": "पंजीकृत मोबाइल नंबर" }, "required": true, "alternatives": [], "notes": { "en": "OTP sent for authentication", "hi": "प्रमाणीकरण के लिए OTP भेजा जाता है" } }
+  ],
+  "steps": [
+    { "n": 1, "title": { "en": "Check eligibility", "hi": "पात्रता जांचें" }, "detail": { "en": "Visit pmjay.gov.in → 'Am I Eligible' → enter mobile → OTP → search by name/ration card/HHD number.", "hi": "pmjay.gov.in → 'क्या मैं पात्र हूँ' → मोबाइल दर्ज करें → OTP → नाम/राशन कार्ड/HHD नंबर से खोजें।" }, "where": "Online (pmjay.gov.in) or call 14555", "cost": "Free", "time": "5 min", "tip": { "en": "Keep mobile handy for OTP", "hi": "OTP के लिए मोबाइल तैयार रखें" } },
+    { "n": 2, "title": { "en": "Get Ayushman Card (e-card)", "hi": "आयुष्मान कार्ड (ई-कार्ड) प्राप्त करें" }, "detail": { "en": "If eligible, download e-card from portal or visit nearest CSC/empanelled hospital for PVC card.", "hi": "यदि पात्र हैं, तो पोर्टल से ई-कार्ड डाउनलोड करें या निकटतम CSC/पैनलबद्ध अस्पताल जाएं PVC कार्ड के लिए।" }, "where": "Online or CSC / Empanelled Hospital", "cost": "Free (PVC card may have nominal fee)", "time": "10-30 min", "tip": { "en": "PVC card is optional; e-card works", "hi": "PVC कार्ड वैकल्पिक है; ई-कार्ड काम करता है" } },
+    { "n": 3, "title": { "en": "Visit empanelled hospital", "hi": "पैनलबद्ध अस्पताल जाएं" }, "detail": { "en": "Present Ayushman Card + Aadhaar at hospital help desk. Doctor advises admission if needed.", "hi": "अस्पताल हेल्प डेस्क पर आयुष्मान कार्ड + आधार प्रस्तुत करें। डॉक्टर जरूरत पड़ने पर भर्ती की सलाह देते हैं।" }, "where": "Empanelled Hospital (public/private)", "cost": "Cashless up to ₹5 lakh", "time": "Varies", "tip": { "en": "Check hospital empanelment on portal first", "hi": "पहले पोर्टल पर अस्पताल की पैनलिंग जांचें" } },
+    { "n": 4, "title": { "en": "Cashless treatment", "hi": "कैशलेस इलाज" }, "detail": { "en": "Hospital raises pre-authorization request. NHA approves. Treatment proceeds with no payment.", "hi": "अस्पताल पूर्व-प्राधिकरण अनुरोध उठाता है। NHA अनुमोदित करता है। बिना भुगतान के इलाज होता है।" }, "where": "Hospital", "cost": "Covered (up to ₹5 lakh/year)", "time": "As per treatment", "tip": { "en": "Keep discharge summary for records", "hi": "रिकॉर्ड के लिए डिस्चार्ज सारांश रखें" } }
+  ],
+  "estimatedDays": 1,
+  "officialUrl": "https://pmjay.gov.in",
+  "updatedAt": "2026-09-26"
+}

@@ -1,0 +1,35 @@
+{
+  "slug": "ujjwala-yojana",
+  "title": { "en": "Ujjwala Yojana", "hi": "उज्ज्वला योजना" },
+  "summary": {
+    "en": "Free LPG connection (cylinder, regulator, hose) for adult women of BPL households. Refill subsidy also available.",
+    "hi": "BPL परिवारों की वयस्क महिलाओं के लिए मुफ्त LPG कनेक्शन (सिलेंडर, रेगुलेटर, होज)। रिफिल सब्सिडी भी उपलब्ध।"
+  },
+  "icon": "🔥",
+  "accent": "terra",
+  "category": "Energy",
+  "authority": "Ministry of Petroleum & Natural Gas",
+  "tags": ["energy", "LPG", "women", "BPL", "clean-cooking"],
+  "eligibility": [
+    { "text": { "en": "Adult woman (18+) from BPL household", "hi": "BPL परिवार की वयस्क महिला (18+)" } },
+    { "text": { "en": "No existing LPG connection in household", "hi": "परिवार में पहले से LPG कनेक्शन नहीं" } },
+    { "text": { "en": "Name in SECC 2011 / state BPL list", "hi": "SECC 2011 / राज्य BPL सूची में नाम" } },
+    { "text": { "en": "Priority: SC/ST, PMAY-G, AAY, forest dwellers, tea garden workers", "hi": "प्राथमिकता: SC/ST, PMAY-G, AAY, वनवासी, चाय बागान श्रमिक" } }
+  ],
+  "documents": [
+    { "id": "aadhaar", "label": { "en": "Aadhaar Card (applicant)", "hi": "आधार कार्ड (आवेदक)" }, "required": true, "alternatives": [], "notes": { "en": "Mandatory for KYC", "hi": "KYC के लिए अनिवार्य" } },
+    { "id": "aadhaar-family", "label": { "en": "Aadhaar of all adult family members", "hi": "सभी वयस्क परिवार सदस्यों का आधार" }, "required": true, "alternatives": [], "notes": { "en": "For de-duplication", "hi": "डी-डुप्लिकेशन के लिए" } },
+    { "id": "bpl-proof", "label": { "en": "BPL Certificate / Ration Card", "hi": "BPL प्रमाण पत्र / राशन कार्ड" }, "required": true, "alternatives": ["SECC-list-printout"], "notes": { "en": "Proof of BPL status", "hi": "BPL स्थिति का प्रमाण" } },
+    { "id": "bank-passbook", "label": { "en": "Bank Passbook", "hi": "बैंक पासबुक" }, "required": true, "alternatives": ["cancelled-cheque"], "notes": { "en": "For subsidy transfer", "hi": "सब्सिडी ट्रांसफर के लिए" } },
+    { "id": "photo", "label": { "en": "Passport-size Photograph", "hi": "पासपोर्ट साइज फोटोग्राफ" }, "required": true, "alternatives": [], "notes": { "en": "Recent, colour", "hi": "हाल का, रंगीन" } }
+  ],
+  "steps": [
+    { "n": 1, "title": { "en": "Check eligibility & locate distributor", "hi": "पात्रता जांचें और वितरक ढूंढें" }, "detail": { "en": "Visit pmuy.gov.in → 'Apply for PMUY Connection' or check with nearest LPG distributor.", "hi": "pmuy.gov.in → 'PMUY कनेक्शन के लिए आवेदन करें' पर जाएं या निकटतम LPG वितरक से जांचें।" }, "where": "Online / LPG Distributor", "cost": "Free", "time": "10 min", "tip": { "en": "Distributor can verify BPL status on portal", "hi": "वितरक पोर्टल पर BPL स्थिति सत्यापित कर सकते हैं" } },
+    { "n": 2, "title": { "en": "Submit KYC form (KYC Form / Ujjwala Form)", "hi": "KYC फॉर्म (KYC फॉर्म / उज्ज्वला फॉर्म) जमा करें" }, "detail": { "en": "Fill form, attach documents, submit to distributor. Distributor uploads to portal.", "hi": "फॉर्म भरें, दस्तावेज संलग्न करें, वितरक को जमा करें। वितरक पोर्टल पर अपलोड करता है।" }, "where": "LPG Distributor", "cost": "Free", "time": "20 min", "tip": { "en": "Get acknowledgement with reference number", "hi": "संदर्भ संख्या के साथ पावती लें" } },
+    { "n": 3, "title": { "en": "Field verification by OMC", "hi": "OMC द्वारा क्षेत्र सत्यापन" }, "detail": { "en": "Oil Marketing Company (IOCL/BPCL/HPCL) verifies details. May visit residence.", "hi": "तेल विपणन कंपनी (IOCL/BPCL/HPCL) विवरण सत्यापित करती है। निवास पर जा सकती है।" }, "where": "Automatic / Residence visit", "cost": "Free", "time": "7-15 days", "tip": { "en": "Be available for verification if visited", "hi": "यदि भेंट हो तो सत्यापन के लिए उपलब्ध रहें" } },
+    { "n": 4, "title": { "en": "Receive connection (cylinder + regulator + hose)", "hi": "कनेक्शन प्राप्त करें (सिलेंडर + रेगुलेटर + होज)" }, "detail": { "en": "Distributor delivers equipment. First refill subsidised. Demo on safe usage given.", "hi": "वितरक उपकरण डिलीवर करता है। पहला रिफिल सब्सिडी वाला। सुरक्षित उपयोग का डेमो दिया जाता है।" }, "where": "Your residence", "cost": "Free (deposit waived)", "time": "3-7 days after approval", "tip": { "en": "Save distributor contact for refills", "hi": "रिफिल के लिए वितरक संपर्क सेव करें" } }
+  ],
+  "estimatedDays": 30,
+  "officialUrl": "https://pmuy.gov.in",
+  "updatedAt": "2026-09-26"
+}

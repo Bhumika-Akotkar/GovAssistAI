@@ -1,0 +1,255 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Workspace {
+  id           String        @id @default(uuid())
+  name         String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  agents            Agent[]
+  phoneNumbers      PhoneNumber[]
+  callSessions      CallSession[]
+  whatsAppInstances WhatsAppInstance[]
+}
+
+model Agent {
+  id                     String        @id @default(uuid())
+  workspaceId            String
+  type                   String        @default("general") // 'dental', 'general', etc.
+  name                   String
+  systemPrompt           String
+  conversationGuidelines String?
+  initialMessage         String
+  voiceId                String?
+  language               String?       @default("en-US")
+  timezone               String?       @default("Asia/Kolkata")
+  slotDuration           Int           @default(60)
+  tools                  Json?
+  enableEmailConfirmation    Boolean       @default(false)
+  enableWhatsAppConfirmation Boolean       @default(false)
+  whatsappEnabled          Boolean       @default(false)
+  automationPurpose        String?       // 'booking' | 'lead_capture' | 'support' | 'sales' | 'custom'
+  automationStatus         String        @default("draft") // 'draft' | 'active' | 'paused'
+  allowedEmails              String[]      @default([])
+  providers              Json?
+  flowConfig             Json?
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+  
+  workspace      Workspace     @relation(fields: [workspaceId], references: [id])
+  phoneNumbers   PhoneNumber[]
+  callSessions   CallSession[]
+  contacts       Contact[]
+  bookings       Booking[]
+  availabilities Availability[]
+}
+
+model PhoneNumber {
+  id                 String    @id @default(uuid())
+  workspaceId        String?
+  phoneNumber        String    @unique
+  agentId            String?
+  channel            String    @default("voice") // 'voice' | 'whatsapp'
+  whatsAppInstanceId String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  workspace         Workspace?        @relation(fields: [workspaceId], references: [id])
+  agent             Agent?            @relation(fields: [agentId], references: [id])
+  whatsAppInstance  WhatsAppInstance? @relation(fields: [whatsAppInstanceId], references: [id])
+}
+
+model WhatsAppInstance {
+  id            String   @id @default(uuid())
+  workspaceId   String
+  provider      String   // 'ultramsg' | 'cloud_api'
+  phoneNumber   String   // E.164
+  phoneNumberId String?  // Meta Cloud API phone number id
+  instanceId    String?  // Ultramsg instance id
+  apiToken      String
+  verifyToken   String
+  businessId    String?  // Meta WABA id
+  appSecret     String?  // Meta app secret for X-Hub-Signature-256 verification
+  enabled       Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  phoneNumbers PhoneNumber[]
+
+  @@unique([workspaceId, phoneNumber])
+}
+
+model CallSession {
+  id                  String    @id @default(uuid())
+  workspaceId         String?
+  agentId             String?
+  createdAt           DateTime  @default(now())
+  endedAt             DateTime?
+  provider            String    @default("browser_websocket")
+  
+  // Costs
+  sttCost             Float     @default(0.0)
+  llmCost             Float     @default(0.0)
+  ttsCost             Float     @default(0.0)
+  totalCost           Float     @default(0.0)
+  
+  // Usage tracking
+  sttDurationSeconds  Int       @default(0)
+  llmPromptTokens     Int       @default(0)
+  llmCompletionTokens Int       @default(0)
+  ttsCharacters       Int       @default(0)
+  toolCalls           Int       @default(0)
+  
+  // Full raw transcript payload
+  transcript          Json?
+
+  workspace           Workspace? @relation(fields: [workspaceId], references: [id])
+  agent               Agent?     @relation(fields: [agentId], references: [id])
+}
+
+model Contact {
+  id          String    @id @default(uuid())
+  agentId     String
+  name        String?
+  email       String?
+  phone       String?
+  metadata    Json?     // Stores extra fields like budget, company, etc.
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  agent       Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  bookings    Booking[]
+}
+
+model Booking {
+  id          String    @id @default(uuid())
+  agentId     String
+  contactId   String
+  startTime   DateTime
+  endTime     DateTime
+  status      String    @default("confirmed") // 'confirmed', 'cancelled'
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  agent       Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  contact     Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+}
+
+model Availability {
+  id          String    @id @default(uuid())
+  agentId     String
+  dayOfWeek   Int       // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  startTime   String    // e.g. "09:00"
+  endTime     String    // e.g. "17:00"
+  isActive    Boolean   @default(true)
+
+  agent       Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, dayOfWeek])
+}
+
+enum UserRole {
+  admin
+  user
+}
+
+model User {
+  id           String    @id @default(uuid())
+  phone        String    @unique
+  name         String?
+  role         UserRole  @default(user)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  devices      CitizenDevice[]
+  conversations CitizenConversation[]
+}
+
+model CitizenConversation {
+  id           String   @id
+  deviceId     String
+  userId       String?
+  language     String   @default("en-IN")
+  channel      String   @default("text")
+  agentId      String?
+  state        Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  messages     CitizenMessage[]
+  device       CitizenDevice @relation(fields: [deviceId], references: [deviceId])
+  user         User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([deviceId, updatedAt])
+}
+
+model CitizenMessage {
+  id             String   @id @default(uuid())
+  conversationId String
+  role           String
+  content        String
+  language       String
+  clientItemId   String?
+  toolCalls      Json?
+  createdAt      DateTime @default(now())
+  conversation   CitizenConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  @@unique([conversationId, clientItemId])
+  @@index([conversationId, createdAt])
+}
+
+model CitizenDevice {
+  id                 String   @id @default(uuid())
+  deviceId           String   @unique
+  deviceSecretHash   String
+  userId             String?
+  profile            Json?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  conversations      CitizenConversation[]
+  user               User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Scheme {
+  id                  String   @id @default(uuid())
+  name                String
+  description         String
+  state               String?
+  minAge              Int?
+  maxAge              Int?
+  maxIncome           Float?
+  gender              String?   // 'male', 'female', 'any'
+  category            String?   // 'general', 'obc', 'sc/st', 'any'
+  sector              String?
+  benefits            String?
+  applicationProcess  String?
+  requiredDocuments   String?
+  isActive            Boolean  @default(true)
+
+  // Rich media & links
+  siteUrl             String?   // Official application portal URL
+  images              Json?     // String[] — banner/card images for the scheme
+
+  // Dynamic / flexible metadata
+  tags                Json?     // String[] — searchable tags e.g. ["farmer","central","PM"]
+  dynamicDetails      Json?     // Record<string,string> — e.g. {"Subsidy Rate":"50%","Max Loan":"₹3L"}
+
+  // AI-assisted eligibility
+  qualifyingQuestions Json?
+  // Array of: { id, question, type: "boolean"|"number"|"select", options?: string[] }
+
+  // Step-by-step application guide (rendered directly by frontend, NOT passed to LLM)
+  applicationSteps    Json?
+  // Array of: { step, title, description, imageUrl?, actionLabel?, actionUrl?, tip?, warning? }
+
+  // Additional structured data
+  exclusionCriteria   Json?     // String[] — who is NOT eligible
+  sources             Json?     // Array of { title, url } — official reference links
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+

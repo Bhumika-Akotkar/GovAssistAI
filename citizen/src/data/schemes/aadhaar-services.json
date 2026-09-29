@@ -1,0 +1,33 @@
+{
+  "slug": "aadhaar-services",
+  "title": { "en": "Aadhaar Services", "hi": "आधार सेवाएं" },
+  "summary": {
+    "en": "Enrolment, update (demographics/biometrics), PVC card order, and document download via UIDAI.",
+    "hi": "नामांकन, अपडेट (जनसांख्यिकी/बायोमेट्रिक्स), PVC कार्ड ऑर्डर, और UIDAI के माध्यम से दस्तावेज डाउनलोड।"
+  },
+  "icon": "🆔",
+  "accent": "sky",
+  "category": "Identity",
+  "authority": "UIDAI (Unique Identification Authority of India)",
+  "tags": ["identity", "aadhaar", "update", "enrolment"],
+  "eligibility": [
+    { "text": { "en": "Any resident of India (including children)", "hi": "भारत का कोई भी निवासी (बच्चे सहित)" } },
+    { "text": { "en": "No age limit for enrolment", "hi": "नामांकन के लिए कोई आयु सीमा नहीं" } },
+    { "text": { "en": "Biometric update mandatory at age 5 and 15", "hi": "उम्र 5 और 15 पर बायोमेट्रिक अपडेट अनिवार्य" } }
+  ],
+  "documents": [
+    { "id": "poi", "label": { "en": "Proof of Identity (POI)", "hi": "पहचान का प्रमाण (POI)" }, "required": true, "alternatives": ["passport", "pan-card", "voter-id", "driving-license", "photo-id-govt"], "notes": { "en": "One document with photo and name", "hi": "फोटो और नाम वाला एक दस्तावेज" } },
+    { "id": "poa", "label": { "en": "Proof of Address (POA)", "hi": "पते का प्रमाण (POA)" }, "required": true, "alternatives": ["passport", "bank-statement", "electricity-bill", "water-bill", "rent-agreement"], "notes": { "en": "One document with current address", "hi": "वर्तमान पते वाला एक दस्तावेज" } },
+    { "id": "pord", "label": { "en": "Proof of Relationship (POR)", "hi": "रिश्ते का प्रमाण (POR)" }, "required": false, "alternatives": ["birth-certificate", "marriage-certificate", "pension-card", "ration-card"], "notes": { "en": "For head-of-family based enrolment", "hi": "परिवार के मुखिया आधारित नामांकन के लिए" } },
+    { "id": "dob", "label": { "en": "Proof of Date of Birth (DOB)", "hi": "जन्म तिथि का प्रमाण (DOB)" }, "required": false, "alternatives": ["birth-certificate", "passport", "ssc-certificate", "pan-card"], "notes": { "en": "If DOB update needed", "hi": "यदि DOB अपडेट जरूरी हो" } }
+  ],
+  "steps": [
+    { "n": 1, "title": { "en": "Locate nearest Aadhaar Seva Kendra", "hi": "निकटतम आधार सेवा केंद्र ढूंढें" }, "detail": { "en": "Visit appointments.uidai.gov.in → 'Locate Enrolment Center' or book appointment online.", "hi": "appointments.uidai.gov.in → 'नामांकन केंद्र ढूंढें' पर जाएं या ऑनलाइन अपॉइंटमेंट बुक करें।" }, "where": "Online (appointments.uidai.gov.in)", "cost": "Free (appointment)", "time": "5 min", "tip": { "en": "Book appointment to avoid queue", "hi": "कतार से बचने के लिए अपॉइंटमेंट बुक करें" } },
+    { "n": 2, "title": { "en": "Visit centre with original documents", "hi": "मूल दस्तावेजों के साथ केंद्र जाएं" }, "detail": { "en": "Carry originals + one photocopy each. Operator captures biometrics and scans docs.", "hi": "मूल + प्रत्येक की एक फोटोकॉपी ले जाएं। ऑपरेटर बायोमेट्रिक्स लेता है और दस्तावेज स्कैन करता है।" }, "where": "Aadhaar Seva Kendra", "cost": "Free (update ₹50 for demographics/biometrics)", "time": "30-60 min", "tip": { "en": "Originals returned after verification", "hi": "सत्यापन के बाद मूल वापस मिलते हैं" } },
+    { "n": 3, "title": { "en": "Get enrolment/update acknowledgment", "hi": "नामांकन/अपडेट पावती प्राप्त करें" }, "detail": { "en": "Slip with URN (Update Request Number) / EID (Enrolment ID) given. Track status online.", "hi": "URN (अपडेट अनुरोध संख्या) / EID (नामांकन ID) वाली पर्ची दी जाती है। ऑनलाइन स्थिति ट्रैक करें।" }, "where": "Centre", "cost": "Free", "time": "Immediate", "tip": { "en": "Save URN/EID for tracking", "hi": "ट्रैकिंग के लिए URN/EID सेव करें" } },
+    { "n": 4, "title": { "en": "Download e-Aadhaar or order PVC card", "hi": "ई-आधार डाउनलोड करें या PVC कार्ड ऑर्डर करें" }, "detail": { "en": "Once generated, download from eaadhaar.uidai.gov.in (masked) or order PVC card (₹50) for delivery.", "hi": "एक बार जनरेट होने पर, eaadhaar.uidai.gov.in से डाउनलोड करें (मास्क्ड) या PVC कार्ड ऑर्डर करें (₹50) डिलीवरी के लिए।" }, "where": "Online", "cost": "e-Aadhaar free, PVC ₹50", "time": "Instant / 5-10 days (PVC)", "tip": { "en": "e-Aadhaar is equally valid everywhere", "hi": "ई-आधार हर जगह समान रूप से मान्य है" } }
+  ],
+  "estimatedDays": 30,
+  "officialUrl": "https://uidai.gov.in",
+  "updatedAt": "2026-09-26"
+}

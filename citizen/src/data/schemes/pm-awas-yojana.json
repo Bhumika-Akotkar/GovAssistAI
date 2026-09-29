@@ -1,0 +1,34 @@
+{
+  "slug": "pm-awas-yojana",
+  "title": { "en": "PM Awas Yojana (Gramin)", "hi": "PM आवास योजना (ग्रामीण)" },
+  "summary": {
+    "en": "Financial assistance of ₹1.20 lakh (plain) / ₹1.30 lakh (hilly) for constructing a pucca house with basic amenities.",
+    "hi": "बुनियादी सुविधाओं के साथ पक्का घर बनाने के लिए ₹1.20 लाख (मैदानी) / ₹1.30 लाख (पहाड़ी) की वित्तीय सहायता।"
+  },
+  "icon": "🏠",
+  "accent": "mustard",
+  "category": "Housing",
+  "authority": "Ministry of Rural Development",
+  "tags": ["housing", "rural", "construction", "subsidy"],
+  "eligibility": [
+    { "text": { "en": "Household without pucca house (kuccha/semi-pucca only)", "hi": "पक्का घर के बिना परिवार (केवल कच्चा/अर्ध-पक्का)" } },
+    { "text": { "en": "Listed in SECC 2011 / Awaas+ survey", "hi": "SECC 2011 / आवास+ सर्वे में सूचीबद्ध" } },
+    { "text": { "en": "Priority: SC/ST, minorities, freed bonded labour, widows, disabled", "hi": "प्राथमिकता: SC/ST, अल्पसंख्यक, मुक्त बंधुआ मजदूर, विधवा, दिव्यांग" } },
+    { "text": { "en": "Not a government employee / income tax payer", "hi": "सरकारी कर्मचारी / आयकर दाता नहीं" } }
+  ],
+  "documents": [
+    { "id": "aadhaar", "label": { "en": "Aadhaar Card", "hi": "आधार कार्ड" }, "required": true, "alternatives": [], "notes": { "en": "Mandatory for registration", "hi": "पंजीकरण के लिए अनिवार्य" } },
+    { "id": "job-card", "label": { "en": "MGNREGA Job Card", "hi": "मनरेगा जॉब कार्ड" }, "required": false, "alternatives": [], "notes": { "en": "If available, helps in verification", "hi": "यदि उपलब्ध हो, तो सत्यापन में मदद करता है" } },
+    { "id": "bank-passbook", "label": { "en": "Bank Passbook", "hi": "बैंक पासबुक" }, "required": true, "alternatives": ["cancelled-cheque"], "notes": { "en": "For DBT of instalments", "hi": "किश्तों के DBT के लिए" } },
+    { "id": "land-doc", "label": { "en": "Land Ownership Document", "hi": "भूमि स्वामित्व दस्तावेज" }, "required": true, "alternatives": [], "notes": { "en": "Proof of land where house will be built", "hi": "उस भूमि का प्रमाण जहां घर बनेगा" } }
+  ],
+  "steps": [
+    { "n": 1, "title": { "en": "Verify name in Awaas+ / SECC list", "hi": "आवास+ / SECC सूची में नाम सत्यापित करें" }, "detail": { "en": "Check with Gram Panchayat or visit pmayg.nic.in → 'Stakeholders' → 'Beneficiary Search'.", "hi": "ग्राम पंचायत से जांचें या pmayg.nic.in → 'हितधारक' → 'लाभार्थी खोज' पर जाएं।" }, "where": "Gram Panchayat / Online", "cost": "Free", "time": "10 min", "tip": { "en": "Ask Panchayat Secretary for help", "hi": "पंचायत सचिव से मदद मांगें" } },
+    { "n": 2, "title": { "en": "Register / Update details", "hi": "पंजीकरण / विवरण अपडेट करें" }, "detail": { "en": "If missing from list, apply at Gram Panchayat with documents. Panchayat uploads to AwaasSoft.", "hi": "यदि सूची में नहीं हैं, तो दस्तावेजों के साथ ग्राम पंचायत में आवेदन करें। पंचायत आवाससॉफ्ट पर अपलोड करती है।" }, "where": "Gram Panchayat", "cost": "Free", "time": "30 min", "tip": { "en": "Get acknowledgement receipt", "hi": "पावती रसीद प्राप्त करें" } },
+    { "n": 3, "title": { "en": "Wait for sanction order", "hi": "मंजूरी आदेश की प्रतीक्षा करें" }, "detail": { "en": "Block/DRDA verifies and issues sanction. SMS sent with sanction ID.", "hi": "ब्लॉक/DRDA सत्यापित करके मंजूरी देता है। मंजूरी ID के साथ SMS भेजा जाता है।" }, "where": "Automatic (Block/DRDA)", "cost": "Free", "time": "1-3 months", "tip": { "en": "Track status on pmayg.nic.in with sanction ID", "hi": "मंजूरी ID से pmayg.nic.in पर स्थिति ट्रैक करें" } },
+    { "n": 4, "title": { "en": "Construct in stages, claim instalments", "hi": "चरणों में निर्माण करें, किश्तों का दावा करें" }, "detail": { "en": "3-4 instalments: foundation → plinth → lintel → roof. Geo-tagged photos required at each stage.", "hi": "3-4 किश्तें: नींव → प्लिंथ → लिंटेल → छत। हर चरण में जियो-टैग्ड फोटो जरूरी।" }, "where": "Own land", "cost": "Self-funded initially (reimbursed)", "time": "12-18 months", "tip": { "en": "Use PMAY-G app to upload photos", "hi": "फोटो अपलोड करने के लिए PMAY-G ऐप उपयोग करें" } }
+  ],
+  "estimatedDays": 540,
+  "officialUrl": "https://pmayg.nic.in",
+  "updatedAt": "2026-09-26"
+}
