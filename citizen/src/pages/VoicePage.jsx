@@ -368,7 +368,8 @@ const COPY = {
     goToChat: 'Ask in Chat instead',
     repeat: 'Repeat that',
     switchToTyping: 'Switch to typing',
-    end: 'End',
+    startListening: 'Start listening',
+    stopListening: 'Stop listening',
     title: 'Speak naturally',
     subtitle: 'Tap the mic, then ask in your own words. Interrupt any time by speaking again.',
     listening: 'Listening',
@@ -388,7 +389,8 @@ const COPY = {
     goToChat: 'चैट में पूछें',
     repeat: 'फिर से सुनाएं',
     switchToTyping: 'टाइपिंग पर जाएं',
-    end: 'समाप्त',
+    startListening: 'सुनना शुरू करें',
+    stopListening: 'सुनना रोकें',
     title: 'स्वाभाविक रूप से बोलें',
     subtitle: 'माइक दबाएं, फिर अपने शब्दों में पूछें। दोबारा बोलकर कभी भी बीच में रोकें।',
     listening: 'सुन रहा हूँ',
@@ -408,7 +410,8 @@ const COPY = {
     goToChat: 'चॅटमध्ये विचारा',
     repeat: 'पुन्हा सांगा',
     switchToTyping: 'टाइपिंगवर जा',
-    end: 'समाप्त',
+    startListening: 'ऐकणे सुरू करा',
+    stopListening: 'ऐकणे थांबवा',
     title: 'नैसर्गिकपणे बोला',
     subtitle: 'माइक दाबा, मग तुमच्या शब्दांत विचारा. पुन्हा बोलून कधीही थांबवू शकता.',
     listening: 'ऐकत आहे',
@@ -428,7 +431,8 @@ const COPY = {
     goToChat: 'சாட்டில் கேளுங்கள்',
     repeat: 'மீண்டும் கேளுங்கள்',
     switchToTyping: 'தட்டச்சுக்குச் செல்லவும்',
-    end: 'முடி',
+    startListening: 'கேட்கத் தொடங்கு',
+    stopListening: 'கேட்பதை நிறுத்து',
     title: 'இயல்பாகப் பேசுங்கள்',
     subtitle: 'மைக்ரை அழுத்தி, உங்கள் சொற்களில் கேளுங்கள். மீண்டும் பேசி எப்போது வேண்டும் நிறுத்தலாம்.',
     listening: 'கேட்பது',
@@ -448,7 +452,8 @@ const COPY = {
     goToChat: 'చాట్‌లో అడగండి',
     repeat: 'మళ్లీ చెప్పండి',
     switchToTyping: 'టైపింగ్‌కు వెళ్లండి',
-    end: 'ముగించు',
+    startListening: 'వినడం ప్రారంభించండి',
+    stopListening: 'వినడం ఆపండి',
     title: 'సహజంగా మాట్లాడండి',
     subtitle: 'మైక్ నొక్కి, మీ మాటలో అడగండి. మళ్లీ మాట్లాడి ఎప్పుడైనా ఆపవచ్చు.',
     listening: 'వింటోంది',
@@ -468,7 +473,8 @@ const COPY = {
     goToChat: 'চ্যাটে জিজ্ঞাসা করুন',
     repeat: 'আবার বলুন',
     switchToTyping: 'টাইপিংয়ে যান',
-    end: 'শেষ',
+    startListening: 'শোনা শুরু করুন',
+    stopListening: 'শোনা বন্ধ করুন',
     title: 'স্বাভাবিকভাবে বলুন',
     subtitle: 'মাইকে চাপ দিন, তারপর নিজের ভাষায় জিজ্ঞাসা করুন। যেকোনো সময় আবার বলে থামাতে পারেন।',
     listening: 'শুনছে',
@@ -675,44 +681,70 @@ export default function VoicePage() {
             />
 
             <div className="relative flex flex-col items-center">
-              {/* Status pill + language */}
-              <div className="mb-6 flex flex-wrap items-center justify-center gap-2">
-                <StatusPill status={statusLabel} copy={copy} />
-                <Pill variant="neutral">{language.nativeLabel || language.label}</Pill>
-                {isListening && <VoiceWaves active />}
-              </div>
-
-              {/* Orb */}
-              <div className="flex justify-center">
-                <Orb
-                  state={statusLabel}
-                  disabled={!micUsable}
-                  interactive={false}
-                  theme="cloud"
-                  size={280}
-                />
-              </div>
-
-              {/* Silence countdown */}
-              {isListening && silenceMs > 0 && (
-                <div className="mt-6 w-full max-w-[220px] animate-in fade-in zoom-in duration-200">
-                  <div className="mb-1.5 flex justify-between px-1 text-[11px] font-medium text-ink-2">
-                    <span>Sending…</span>
-                    <span>{((2000 - silenceMs) / 1000).toFixed(1)}s</span>
+              <VoiceStage
+                status={statusLabel}
+                isOnline={isOnline}
+                voiceAvailable={micUsable}
+                languageLabel={language.nativeLabel || language.label}
+                languageCode={language.code}
+                error={lastError}
+              >
+                <div className="flex flex-col items-center">
+                  {/* Status pill + language */}
+                  <div className="mb-6 flex flex-wrap items-center justify-center gap-2">
+                    <StatusPill status={statusLabel} copy={copy} />
+                    <Pill variant="neutral">{language.nativeLabel || language.label}</Pill>
+                    {isListening && <VoiceWaves active />}
                   </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full border border-line bg-paper-2">
-                    <div
-                      className="h-full bg-forest transition-all duration-75 ease-linear"
-                      style={{ width: `${(silenceMs / 2000) * 100}%` }}
+
+                  {/* Orb */}
+                  <div className="flex justify-center">
+                    <Orb
+                      state={statusLabel}
+                      disabled={!micUsable}
+                      interactive={false}
+                      theme="cloud"
+                      size={280}
                     />
                   </div>
-                </div>
-              )}
 
-              {/* Error */}
-              {lastError && (
-                <p className="mt-4 max-w-sm text-center text-xs text-terra">{lastError}</p>
-              )}
+                  <Button
+                    type="button"
+                    variant={isListening ? 'secondary' : 'primary'}
+                    onClick={onToggle}
+                    disabled={!micUsable || status === 'connecting'}
+                    aria-pressed={isListening}
+                    className="mt-5 min-w-44"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                      <rect x="9" y="2" width="6" height="12" rx="3" />
+                      <path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    {isListening ? copy.stopListening : copy.startListening}
+                  </Button>
+
+                  {/* Silence countdown */}
+                  {isListening && silenceMs > 0 && (
+                    <div className="mt-6 w-full max-w-[220px] animate-in fade-in zoom-in duration-200">
+                      <div className="mb-1.5 flex justify-between px-1 text-[11px] font-medium text-ink-2">
+                        <span>Sending…</span>
+                        <span>{((2000 - silenceMs) / 1000).toFixed(1)}s</span>
+                      </div>
+                      <div className="h-1.5 w-full overflow-hidden rounded-full border border-line bg-paper-2">
+                        <div
+                          className="h-full bg-forest transition-all duration-75 ease-linear"
+                          style={{ width: `${(silenceMs / 2000) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Error */}
+                  {lastError && (
+                    <p className="mt-4 max-w-sm text-center text-xs text-terra">{lastError}</p>
+                  )}
+                </div>
+              </VoiceStage>
             </div>
           </div>
 
@@ -737,9 +769,6 @@ export default function VoicePage() {
             </Link>
             <Button variant="secondary" onClick={replayLastReply} disabled={!hasReplayableAudio()}>
               {copy.repeat}
-            </Button>
-            <Button variant="ghost" onClick={() => stopMicrophone()} disabled={!isListening}>
-              {copy.end}
             </Button>
           </div>
         </div>
