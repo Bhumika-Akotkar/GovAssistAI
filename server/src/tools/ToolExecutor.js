@@ -54,7 +54,7 @@ class ToolExecutor {
    * @param {Function} opts.getRecentTranscript - () => Array
    * @param {Function} opts.getStateManager   - () => CallStateManager
    */
-  constructor({ registry, tts, llm, transcript, sendToClient, endConversation, usageTracker, getRecentTranscript, getStateManager, onToolResult }) {
+  constructor({ registry, tts, llm, transcript, sendToClient, endConversation, usageTracker, getRecentTranscript, getStateManager, onToolResult, changeLanguageFn }) {
     this.registry        = registry;
     this.tts             = tts;
     this.llm             = llm;
@@ -65,6 +65,7 @@ class ToolExecutor {
     this.getRecentTranscript = getRecentTranscript || (() => transcript);
     this.getStateManager = getStateManager || (() => null);
     this.onToolResult    = onToolResult || null;
+    this.changeLanguageFn = changeLanguageFn || null;
     
     // Guard: prevent save_collected_data from being executed more than once per call
     this._dataSaved      = false;
@@ -167,6 +168,22 @@ class ToolExecutor {
     // -------------------------------------------------------------------------
     // SYSTEM: record_field
     // -------------------------------------------------------------------------
+    if (toolName === 'switch_language') {
+      this._playFiller(toolName, preamble);
+      if (this.changeLanguageFn && args.language) {
+        this.changeLanguageFn(args.language);
+      }
+      const result = { success: true, message: `Successfully switched language to ${args.language}. You MUST now respond entirely in ${args.language}.` };
+
+      if (signal.aborted) return;
+
+      const toolCallId = this._appendToolCall(toolName, args, preamble, llmToolCallId);
+      this._appendToolResult(toolName, toolCallId, result);
+
+      if (shouldReprompt) this._rePromptLLM('auto');
+      return;
+    }
+
     if (toolName === 'record_field') {
       console.log('[ToolExecutor] Recorded field:', args);
       

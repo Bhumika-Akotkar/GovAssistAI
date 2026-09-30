@@ -90,6 +90,7 @@ class ConversationManager extends EventEmitter {
       getRecentTranscript: this.getRecentTranscript.bind(this),
       getStateManager: () => this.stateManager,
       getEligibilityFlow: () => this.eligibilityFlow,
+      changeLanguageFn: this.changeLanguage.bind(this),
     });
 
     this.userSpeechBuffer = "";
@@ -283,6 +284,7 @@ class ConversationManager extends EventEmitter {
 
     const language = config.language || "en-US";
     this.language = language;
+    this.provider = provider;
     this.conversationId = config.conversationId || null;
     this.deviceId = config.deviceId || null;
     const channel =
@@ -386,6 +388,7 @@ class ConversationManager extends EventEmitter {
       getFlowManager: () => this.eligibilityFlow,
       getLanguage: () => this.language,
     });
+    this.registry.injectLanguageTool();
 
     this.llm.initialize(fullPrompt);
     this.stt
@@ -584,6 +587,11 @@ class ConversationManager extends EventEmitter {
     const oldLanguage = this.language;
     this.language = newLanguage;
     const baseLang = newLanguage.split("-")[0].toLowerCase();
+
+    if (this.stt) {
+      this.stt.disconnect();
+      this.stt.connect(this.provider || "browser", newLanguage).catch(e => console.error('[ConversationManager] STT reconnect error:', e));
+    }
 
     const ttsConfig = getTTSConfig(newLanguage);
     if (ttsConfig) {

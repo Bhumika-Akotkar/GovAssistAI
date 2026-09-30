@@ -1589,6 +1589,30 @@ class ToolRegistry {
       },
     });
   }
+
+  injectLanguageTool() {
+    this._builtIn.set("switch_language", {
+      schema: {
+        type: "function",
+        function: {
+          name: "switch_language",
+          description: "Switch the spoken language of the conversation. Call this ONLY when the user explicitly requests to speak in a different language.",
+          parameters: {
+            type: "object",
+            properties: {
+              language: {
+                type: "string",
+                description: "The BCP-47 language code to switch to. Supported values: 'en-US' (English), 'hi-IN' (Hindi), 'mr-IN' (Marathi), 'ta-IN' (Tamil), 'te-IN' (Telugu), 'bn-IN' (Bengali), 'gu-IN' (Gujarati), 'kn-IN' (Kannada), 'ml-IN' (Malayalam), 'pa-IN' (Punjabi), 'or-IN' (Odia), 'as-IN' (Assamese)."
+              }
+            },
+            required: ["language"],
+            additionalProperties: false
+          }
+        }
+      },
+      fillerKey: "generic"
+    });
+  }
 }
 
 module.exports = { ToolRegistry };

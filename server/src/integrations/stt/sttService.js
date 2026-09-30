@@ -18,7 +18,9 @@ class STTService extends STTProvider {
         console.log(`[STTService] Connecting to Deepgram WebSocket for provider: ${provider}, language: ${language}...`);
         
         const apiKey = process.env.DEEPGRAM_API_KEY;
-        const deepgramLang = language === 'hi-IN' ? 'hi' : language.split('-')[0];
+        const baseLang = language.split('-')[0];
+        const supportedDeepgramLangs = ['en', 'es', 'fr', 'de', 'it', 'pt', 'nl', 'hi', 'ja', 'zh', 'ko', 'id', 'uk', 'ru', 'tr', 'pl', 'sv', 'no', 'da', 'fi'];
+        const deepgramLang = supportedDeepgramLangs.includes(baseLang) ? baseLang : 'hi';
         let url = `wss://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&interim_results=true&endpointing=200&vad_events=true&keepalive=true&language=${deepgramLang}`;
         
         if (provider === 'telnyx') {

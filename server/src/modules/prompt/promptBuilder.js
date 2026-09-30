@@ -350,7 +350,8 @@ function buildLanguageSection(agent) {
     `Speak ENTIRELY in ${langName} — every word: greeting, numbers, dates, acknowledgments, confirmations, goodbyes.\n` +
     `Do not switch to English unless the caller switches first.\n` +
     `If the caller mixes in English words naturally (code-switching), mirror it lightly, but always default back to ${langName}.\n` +
-    `Warmth and phrasing-variation rules still apply — expressed naturally in ${langName}, not translated word-for-word.`;
+    `Warmth and phrasing-variation rules still apply — expressed naturally in ${langName}, not translated word-for-word.\n\n` +
+    `CRITICAL LANGUAGE SWITCHING RULE: If the caller explicitly asks you to speak in a different language (e.g. "speak in English", "हिंदी में बात करो"), you MUST immediately call the \`switch_language\` tool. DO NOT refuse the request or say you cannot change the language.`;
 
   const scriptRule = scriptRules[script];
   if (scriptRule) {
