@@ -48,6 +48,21 @@ router.get("/:id/steps", async (req, res) => {
   }
 });
 
+// GET /api/schemes/users - Get all users with phone numbers (admin only)
+router.get("/users", authenticate, requireRole("admin"), async (req, res) => {
+  try {
+    const users = await dbService.prisma.user.findMany({
+      where: { phone: { not: '' } },
+      select: { id: true, phone: true, name: true, role: true },
+      orderBy: { createdAt: "desc" },
+    });
+    res.json(users);
+  } catch (err) {
+    console.error("[Schemes API] Error fetching users:", err);
+    res.status(500).json({ error: "Failed to fetch users" });
+  }
+});
+
 // GET /api/schemes/:id - Get single scheme by ID
 router.get("/:id", authenticate, async (req, res) => {
   try {
@@ -144,6 +159,80 @@ router.post("/", authenticate, requireRole("admin"), async (req, res) => {
   } catch (err) {
     console.error("[Schemes API] Error creating scheme:", err);
     res.status(500).json({ error: "Failed to create scheme" });
+  }
+});
+
+// POST /api/schemes/:id/broadcast - Manually broadcast scheme to users
+router.post("/:id/broadcast", authenticate, requireRole("admin"), async (req, res) => {
+  try {
+    const { userIds } = req.body || {};
+    
+    const scheme = await dbService.prisma.scheme.findUnique({
+      where: { id: req.params.id },
+    });
+    if (!scheme) return res.status(404).json({ error: "Scheme not found" });
+
+    let whereClause = { phone: { not: '' } };
+    if (userIds && Array.isArray(userIds) && userIds.length > 0) {
+      whereClause.id = { in: userIds };
+    }
+
+    const { baileysInstanceManager } = require("../services/BaileysInstanceManager");
+    const users = await dbService.prisma.user.findMany({
+      where: whereClause,
+      select: { phone: true }
+    });
+    
+    const instances = baileysInstanceManager.getAllInstances();
+    const activeInstance = instances.find(inst => inst.isActive && inst.status === 'connected');
+    
+    if (activeInstance) {
+      console.log(`[Schemes API] Broadcasting scheme to ${users.length} users`);
+      let sentCount = 0;
+      const processedPhones = new Set();
+      
+      for (const user of users) {
+        try {
+          // Format phone number: remove non-numeric characters
+          let formattedPhone = user.phone.replace(/[^0-9]/g, '');
+          
+          // If the number is exactly 10 digits, assume it's an Indian number and prepend 91
+          if (formattedPhone.length === 10) {
+            formattedPhone = '91' + formattedPhone;
+          }
+          
+          // If phone is still empty or invalid after formatting, skip
+          if (!formattedPhone || formattedPhone.length < 10) {
+            console.log(`[Schemes API] Skipping invalid phone number: ${user.phone}`);
+            continue;
+          }
+          
+          if (processedPhones.has(formattedPhone)) {
+             continue; // Skip duplicates
+          }
+          processedPhones.add(formattedPhone);
+
+          const message = `🌟 *New Scheme Announced!*\n\n*${scheme.name}*\n${scheme.description}\n\nReply to this message to learn more or check if you are eligible!`;
+          
+          if (scheme.images && Array.isArray(scheme.images) && scheme.images.length > 0) {
+            await baileysInstanceManager.sendMessage(activeInstance.instanceId, formattedPhone, 'image', { url: scheme.images[0], caption: message });
+          } else {
+            await baileysInstanceManager.sendMessage(activeInstance.instanceId, formattedPhone, 'text', { body: message });
+          }
+          
+          sentCount++;
+        } catch (err) {
+          console.error(`[Schemes API] Failed to send broadcast to ${user.phone}:`, err.message);
+        }
+      }
+      res.json({ success: true, message: `Broadcasted to ${sentCount} unique users` });
+    } else {
+      console.log('[Schemes API] No active Baileys instance to broadcast new scheme');
+      res.status(503).json({ error: "No active WhatsApp connection" });
+    }
+  } catch (err) {
+    console.error("[Schemes API] Broadcast error:", err);
+    res.status(500).json({ error: "Broadcast failed" });
   }
 });
 

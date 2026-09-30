@@ -15,6 +15,7 @@ import AdminLoginPage from "./pages/AdminLoginPage";
 import AdminRegisterPage from "./pages/AdminRegisterPage";
 import AdminSchemesPage from "./pages/AdminSchemesPage";
 import AdminBaileysPage from "./pages/AdminBaileysPage";
+import AdminUsersPage from "./pages/AdminUsersPage";
 // The chat and voice pages pull in the session hook, the outbox, and the whole
 // audio pipeline. None of that is needed to read the home page, which is the
 // one a returning citizen hits first — so keep it out of the initial bundle.
@@ -216,6 +217,7 @@ export default function App() {
           <Route path="/admin/login" element={<AdminLoginPage />} />
           <Route path="/admin/schemes" element={<AdminSchemesPage />} />
           <Route path="/admin/baileys" element={<AdminBaileysPage />} />
+          <Route path="/admin/users" element={<AdminUsersPage />} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

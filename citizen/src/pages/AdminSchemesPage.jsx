@@ -71,6 +71,14 @@ export default function AdminSchemesPage() {
   const [importLoading, setImportLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Broadcast Modal State
+  const [users, setUsers] = useState([]);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [showBroadcastModal, setShowBroadcastModal] = useState(false);
+  const [broadcastSchemeId, setBroadcastSchemeId] = useState(null);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [broadcasting, setBroadcasting] = useState(false);
+
   const emptyForm = {
     name: '', description: '', state: '', minAge: '', maxAge: '', maxIncome: '',
     gender: '', category: '', sector: '', benefits: '', applicationProcess: '',
@@ -132,6 +140,49 @@ export default function AdminSchemesPage() {
       if (res.ok) { setSuccess('Deleted successfully'); loadSchemes(); setTimeout(() => setSuccess(''), 3000); }
       else throw new Error();
     } catch { setError('Failed to delete'); setTimeout(() => setError(''), 3000); }
+  };
+
+  const openBroadcastModal = async (id) => {
+    setBroadcastSchemeId(id);
+    setShowBroadcastModal(true);
+    setSelectedUsers([]);
+    setUsersLoading(true);
+    try {
+      const res = await adminFetch('/api/schemes/users');
+      if (res.ok) {
+        setUsers(await res.json());
+      }
+    } catch (err) {
+      setError('Failed to load users');
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  const handleBroadcastConfirm = async () => {
+    if (selectedUsers.length === 0) return alert('Select at least one user');
+    if (broadcasting) return;
+    
+    setBroadcasting(true);
+    try {
+      const res = await adminFetch(`/api/schemes/${broadcastSchemeId}/broadcast`, { 
+        method: 'POST',
+        body: JSON.stringify({ userIds: selectedUsers })
+      });
+      const result = await res.json();
+      if (res.ok) {
+        setSuccess(result.message || 'Broadcasted successfully!');
+        setTimeout(() => setSuccess(''), 3000);
+        setShowBroadcastModal(false);
+      } else {
+        throw new Error(result.error || 'Failed to broadcast');
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to broadcast');
+      setTimeout(() => setError(''), 3000);
+    } finally {
+      setBroadcasting(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -212,6 +263,7 @@ export default function AdminSchemesPage() {
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <h1 className="text-xl font-bold">Government Schemes Admin</h1>
           <div className="flex gap-2">
+            <Button variant="secondary" size="sm" onClick={() => navigate('/admin/users')}>Users</Button>
             <Button variant="secondary" size="sm" onClick={() => navigate('/admin/baileys')}>WhatsApp Setup</Button>
             <Button variant="white" size="sm" onClick={() => navigate('/')}>Back to Home</Button>
           </div>
@@ -255,6 +307,11 @@ export default function AdminSchemesPage() {
                 schemes.map(scheme => (
                   <Card key={scheme.id} className="p-5">
                     <div className="flex justify-between items-start gap-4">
+                      {scheme.images && scheme.images.length > 0 && (
+                        <div className="w-24 h-24 shrink-0 rounded-lg overflow-hidden border border-line bg-paper-2">
+                          <img src={scheme.images[0]} alt={scheme.name} className="w-full h-full object-cover" />
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <h3 className="text-base font-semibold text-ink">{scheme.name}</h3>
@@ -279,6 +336,7 @@ export default function AdminSchemesPage() {
                         </div>
                       </div>
                       <div className="flex gap-2 shrink-0">
+                        <Button variant="white" size="sm" onClick={() => openBroadcastModal(scheme.id)}>Whatsapp Notify</Button>
                         <Button variant="secondary" size="sm" onClick={() => handleEdit(scheme)}>Edit</Button>
                         <Button variant="danger" size="sm" onClick={() => handleDelete(scheme.id)}>Delete</Button>
                       </div>
@@ -533,6 +591,61 @@ export default function AdminSchemesPage() {
                 <Button type="submit">{editingScheme ? 'Update Scheme' : 'Create Scheme'}</Button>
               </div>
             </form>
+          </Card>
+        </div>
+      )}
+
+      {/* ─── BROADCAST MODAL ─── */}
+      {showBroadcastModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-lg p-6">
+            <h2 className="text-xl font-bold text-ink mb-4">Select Users to Broadcast</h2>
+            {usersLoading ? (
+              <p className="text-ink-2 mb-4">Loading users...</p>
+            ) : (
+              <div className="max-h-60 overflow-y-auto mb-4 border border-line rounded-lg p-2">
+                {users.length === 0 ? (
+                  <p className="text-sm text-ink-2 p-2">No users found.</p>
+                ) : (
+                  users.map(u => (
+                    <div key={u.id} className="flex items-center gap-2 p-2 hover:bg-paper-2 rounded">
+                      <input 
+                        type="checkbox" 
+                        id={`user-${u.id}`} 
+                        checked={selectedUsers.includes(u.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) setSelectedUsers(prev => [...prev, u.id]);
+                          else setSelectedUsers(prev => prev.filter(id => id !== u.id));
+                        }}
+                        className="w-4 h-4 cursor-pointer"
+                      />
+                      <label htmlFor={`user-${u.id}`} className="text-sm cursor-pointer flex-1">
+                        {u.phone} {u.name ? `(${u.name})` : ''} - <span className="text-xs text-ink-3">{u.role}</span>
+                      </label>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+            
+            <div className="flex justify-between items-center mt-2">
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                onClick={() => {
+                  if (selectedUsers.length === users.length) setSelectedUsers([]);
+                  else setSelectedUsers(users.map(u => u.id));
+                }}
+              >
+                {selectedUsers.length === users.length ? 'Deselect All' : 'Select All'}
+              </Button>
+              <div className="flex gap-2">
+                <Button variant="secondary" onClick={() => setShowBroadcastModal(false)} disabled={broadcasting}>Cancel</Button>
+                <Button onClick={handleBroadcastConfirm} disabled={selectedUsers.length === 0 || usersLoading || broadcasting}>
+                  {broadcasting ? 'Sending...' : `Send (${selectedUsers.length})`}
+                </Button>
+              </div>
+            </div>
           </Card>
         </div>
       )}

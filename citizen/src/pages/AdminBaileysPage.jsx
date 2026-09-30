@@ -435,9 +435,16 @@ export default function AdminBaileysPage() {
             <Button 
               variant="secondary" 
               size="sm"
+              onClick={() => navigate('/admin/users')}
+            >
+              Users
+            </Button>
+            <Button 
+              variant="secondary" 
+              size="sm"
               onClick={() => navigate('/admin/schemes')}
             >
-              Back to Schemes
+              Schemes
             </Button>
             <Button 
               variant="white" 

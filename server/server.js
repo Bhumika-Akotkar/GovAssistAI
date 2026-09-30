@@ -68,6 +68,9 @@ app.use('/api/schemes', schemesRouter);
 const baileysRouter = require('./src/routes/baileys');
 app.use('/api/baileys', baileysRouter);
 
+const usersRouter = require('./src/routes/users');
+app.use('/api/users', usersRouter);
+
 // WhatsApp webhooks. Mounted as :instanceId so a single server can serve
 // many businesses. The router handles both GET (handshake) and POST (events).
 app.all('/api/whatsapp/webhook', (req, res) => WhatsAppInboundRouter.handle(req, res));
