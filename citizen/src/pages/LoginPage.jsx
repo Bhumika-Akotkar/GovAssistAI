@@ -494,11 +494,11 @@ export default function LoginPage() {
                   {loading ? (
                     <>
                       <RefreshCw size={15} className="animate-spin" />
-                      Sending OTP…
+                      <span>Sending OTP…</span>
                     </>
                   ) : (
                     <>
-                      Send OTP
+                      <span>Send OTP</span>
                       <ArrowRight
                         size={15}
                         className="transition-transform group-hover:translate-x-0.5"
@@ -561,11 +561,11 @@ export default function LoginPage() {
                   {loading ? (
                     <>
                       <RefreshCw size={15} className="animate-spin" />
-                      Verifying…
+                      <span>Verifying…</span>
                     </>
                   ) : (
                     <>
-                      Verify & continue
+                      <span>Verify & continue</span>
                       <ArrowRight
                         size={15}
                         className="transition-transform group-hover:translate-x-0.5"

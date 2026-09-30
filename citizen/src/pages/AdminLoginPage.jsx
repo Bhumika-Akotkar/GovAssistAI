@@ -133,11 +133,11 @@ export default function AdminLoginPage() {
           >
             {loading ? (
               <>
-                <RefreshCw size={15} className="animate-spin" /> Sending OTP…
+                <RefreshCw size={15} className="animate-spin" /> <span>Sending OTP…</span>
               </>
             ) : (
               <>
-                Send OTP <ArrowRight size={15} />
+                <span>Send OTP</span> <ArrowRight size={15} />
               </>
             )}
           </button>
@@ -177,11 +177,11 @@ export default function AdminLoginPage() {
           >
             {loading ? (
               <>
-                <RefreshCw size={15} className="animate-spin" /> Verifying…
+                <RefreshCw size={15} className="animate-spin" /> <span>Verifying…</span>
               </>
             ) : (
               <>
-                Verify &amp; login <ArrowRight size={15} />
+                <span>Verify &amp; login</span> <ArrowRight size={15} />
               </>
             )}
           </button>

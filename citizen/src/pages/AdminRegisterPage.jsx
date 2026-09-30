@@ -144,11 +144,11 @@ export default function AdminRegisterPage() {
           >
             {loading ? (
               <>
-                <RefreshCw size={15} className="animate-spin" /> Sending OTP…
+                <RefreshCw size={15} className="animate-spin" /> <span>Sending OTP…</span>
               </>
             ) : (
               <>
-                Send OTP <ArrowRight size={15} />
+                <span>Send OTP</span> <ArrowRight size={15} />
               </>
             )}
           </button>
@@ -188,11 +188,11 @@ export default function AdminRegisterPage() {
           >
             {loading ? (
               <>
-                <RefreshCw size={15} className="animate-spin" /> Verifying…
+                <RefreshCw size={15} className="animate-spin" /> <span>Verifying…</span>
               </>
             ) : (
               <>
-                Verify &amp; register <ArrowRight size={15} />
+                <span>Verify &amp; register</span> <ArrowRight size={15} />
               </>
             )}
           </button>
