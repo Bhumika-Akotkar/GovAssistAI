@@ -9,6 +9,8 @@ function setupTelnyxConnectionHandler(ws, req, to = null) {
   // We'll extract the streamSid from the 'start' event later
   const channelAdapter = new TelnyxChannelAdapter(ws);
 
+  let conversationManager;
+
   ws.on('message', async (message) => {
     try {
       const msg = JSON.parse(message.toString());
@@ -27,15 +29,26 @@ function setupTelnyxConnectionHandler(ws, req, to = null) {
 
         if (to) {
           try {
-            // Find if this phone number is mapped to an Agent
-            const dbPhone = await dbService.prisma.phoneNumber.findUnique({
-              where: { phoneNumber: to },
-            });
+            let agentIdToUse = null;
+
+            if (to === '+18389664013') {
+              console.log(`[TelnyxConnectionHandler] Direct mapping for ${to}, bypassing Agent DB to use VoicePage functionality...`);
+              config = { language: 'hi-IN' }; // Or whatever default language you want
+              providerConfig = { stt: { provider: 'deepgram' } };
+            } else {
+              // Find if this phone number is mapped to an Agent
+              const dbPhone = await dbService.prisma.phoneNumber.findUnique({
+                where: { phoneNumber: to },
+              });
+              if (dbPhone && dbPhone.agentId) {
+                agentIdToUse = dbPhone.agentId;
+              }
+            }
             
-            if (dbPhone && dbPhone.agentId) {
-              console.log(`[TelnyxConnectionHandler] Routing call to Agent ID: ${dbPhone.agentId}`);
+            if (agentIdToUse) {
+              console.log(`[TelnyxConnectionHandler] Routing call to Agent ID: ${agentIdToUse}`);
               
-              const { agent, registry, systemPrompt } = await loadAgentRuntime(dbPhone.agentId);
+              const { agent, registry, systemPrompt } = await loadAgentRuntime(agentIdToUse);
               
               config = {
                 ...agent,
@@ -46,7 +59,7 @@ function setupTelnyxConnectionHandler(ws, req, to = null) {
               };
 
               providerConfig = agent.providers || null;
-            } else {
+            } else if (to !== '+18389664013') {
               console.log(`[TelnyxConnectionHandler] Dialed number ${to} has no mapped Agent. Using default config.`);
             }
           } catch (dbErr) {
@@ -54,19 +67,23 @@ function setupTelnyxConnectionHandler(ws, req, to = null) {
           }
         }
         
-        const conversationManager = new ConversationManager(channelAdapter, providerConfig);
+        conversationManager = new ConversationManager(channelAdapter, providerConfig);
         await conversationManager.startConversation(config, 'telnyx');
       } 
       else if (msg.event === 'media') {
         // Telnyx sends audio payload in base64
         if (msg.media && msg.media.payload) {
           const audioBuffer = Buffer.from(msg.media.payload, 'base64');
-          conversationManager.handleIncomingAudio(audioBuffer);
+          if (conversationManager) {
+            conversationManager.handleIncomingAudio(audioBuffer);
+          }
         }
       } 
       else if (msg.event === 'stop') {
         console.log('[TelnyxConnectionHandler] Media stream stopped by Telnyx.');
-        conversationManager.endConversation();
+        if (conversationManager) {
+          conversationManager.endConversation();
+        }
       }
     } catch (err) {
       console.error('[TelnyxConnectionHandler] Error processing message:', err.message);
@@ -75,12 +92,16 @@ function setupTelnyxConnectionHandler(ws, req, to = null) {
 
   ws.on('close', () => {
     console.log('[TelnyxConnectionHandler] WebSocket closed.');
-    conversationManager.endConversation();
+    if (conversationManager) {
+      conversationManager.endConversation();
+    }
   });
 
   ws.on('error', (err) => {
     console.error('[TelnyxConnectionHandler] WebSocket error:', err);
-    conversationManager.endConversation();
+    if (conversationManager) {
+      conversationManager.endConversation();
+    }
   });
 }
 
