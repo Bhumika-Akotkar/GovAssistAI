@@ -54,7 +54,7 @@ class ToolExecutor {
    * @param {Function} opts.getRecentTranscript - () => Array
    * @param {Function} opts.getStateManager   - () => CallStateManager
    */
-  constructor({ registry, tts, llm, transcript, sendToClient, endConversation, usageTracker, getRecentTranscript, getStateManager, onToolResult, changeLanguageFn }) {
+  constructor({ registry, tts, llm, transcript, sendToClient, endConversation, usageTracker, getRecentTranscript, getStateManager, onToolResult, changeLanguageFn, getChannelAdapter }) {
     this.registry        = registry;
     this.tts             = tts;
     this.llm             = llm;
@@ -66,6 +66,7 @@ class ToolExecutor {
     this.getStateManager = getStateManager || (() => null);
     this.onToolResult    = onToolResult || null;
     this.changeLanguageFn = changeLanguageFn || null;
+    this.getChannelAdapter = getChannelAdapter || (() => null);
     
     // Guard: prevent save_collected_data from being executed more than once per call
     this._dataSaved      = false;
@@ -648,10 +649,41 @@ class ToolExecutor {
     // -------------------------------------------------------------------------
     if (toolName === 'transfer_call') {
       this._playFiller(toolName, preamble);
-      const result = { 
-        success: true, 
-        message: `Simulating transfer to ${args.department || 'a representative'}.` 
-      };
+      let result = { success: false, message: 'Transfer failed.' };
+      const channelAdapter = this.getChannelAdapter();
+      console.log('[ToolExecutor] Transfer call - channelAdapter provider:', channelAdapter?.provider);
+      console.log('[ToolExecutor] Transfer call - callControlId:', channelAdapter?.callControlId);
+      
+      if (channelAdapter && channelAdapter.provider === 'telnyx' && channelAdapter.callControlId) {
+        try {
+          const response = await fetch(`https://api.telnyx.com/v2/calls/${channelAdapter.callControlId}/actions/transfer`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.TELNYX_API_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              to: '+918319901820'
+            })
+          });
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Telnyx API error: ${response.status} ${errorText}`);
+          }
+          result = { success: true, message: `Successfully transferring call to +917389721838.` };
+          
+          // End the AI conversation so it stops listening
+          setTimeout(() => {
+            if (this.endConversation) this.endConversation();
+          }, 1500); // Give it a short delay to finish playing the filler
+        } catch (err) {
+          console.error('[ToolExecutor] Error transferring call via Telnyx:', err);
+          result = { success: false, message: `Error transferring call: ${err.message}` };
+        }
+      } else {
+        result = { success: false, message: 'Not a Telnyx call or missing Call Control ID.' };
+        console.warn('[ToolExecutor] Cannot transfer call: Not a Telnyx call or missing callControlId');
+      }
       
       if (signal.aborted) return;
       
@@ -661,7 +693,7 @@ class ToolExecutor {
       const stateManager = this.getStateManager();
       if (stateManager) stateManager.onToolResult(toolName, result);
       
-      if (shouldReprompt) this._rePromptLLM('auto');
+      if (!result.success && shouldReprompt) this._rePromptLLM('auto');
       return;
     }
 

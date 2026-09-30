@@ -19,6 +19,7 @@ function setupTelnyxConnectionHandler(ws, req, to = null) {
         console.log(`[TelnyxConnectionHandler] Media stream started. Stream ID: ${msg.stream_id}, Dialed Number: ${to}`);
         console.log(`[TelnyxConnectionHandler] Start event details:`, JSON.stringify(msg.start, null, 2));
         channelAdapter.streamSid = msg.stream_id;
+        channelAdapter.callControlId = msg.start.call_control_id;
         
         let config = {
           systemPrompt: "You are a helpful AI assistant for a business. Keep your answers concise and professional.",

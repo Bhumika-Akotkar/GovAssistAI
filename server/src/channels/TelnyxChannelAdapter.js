@@ -9,6 +9,7 @@ class TelnyxChannelAdapter extends ChannelAdapter {
     super();
     this.ws = ws;
     this.streamSid = streamSid; // Optional tracking ID
+    this.provider = 'telnyx';
 
     this.ws.on('close', () => {
       console.log('[TelnyxChannelAdapter] WebSocket closed');

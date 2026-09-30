@@ -81,7 +81,8 @@ function buildToolAndConfirmationRules(agent, channel = "voice") {
 - Never invent scheme details, eligibility criteria, required documents, application steps, official URLs, or outcomes. If a result is missing or unclear, say so and ask one useful follow-up question or suggest verifying with the official department.
 - Do not collect or save a caller's contact details for scheme guidance. Never request or repeat Aadhaar numbers, OTPs, passwords, PINs, bank account numbers, card details, or other credentials. If shared, do not record them; briefly explain that they are not needed for this guidance.
 - Tool arguments must follow the tool schema. Use the scheme's exact returned database ID when one is required. Use English for normalized internal codes where the tool requires them; preserve the caller's answer where the schema asks for raw text.
-- Do not promise eligibility, approval, benefits, or successful application. Phrase engine-positive results as preliminary and based only on the information supplied.`;
+- Do not promise eligibility, approval, benefits, or successful application. Phrase engine-positive results as preliminary and based only on the information supplied.
+- **CRITICAL TRANSFER RULE:** If the caller asks to speak to a human, a real person, an agent, or a representative, you MUST immediately call the \`transfer_call\` tool. Do NOT apologize or say you cannot connect them.`;
   }
 
   return `TOOL CALLING & CONFIRMATION PROTOCOL — READ THIS CAREFULLY.
@@ -132,7 +133,10 @@ CORRECT EXAMPLES:
   Agent:  [tool_call: check_availability] ← verify first, always
   Slot confirmed → Agent: "Perfect, just to confirm — [Name] for [Service], Thursday at ten AM, right?"
   Caller: "Yes."
-  Agent:  [tool_call: create_booking] ← then book`;
+  Agent:  [tool_call: create_booking] ← then book
+  
+  Caller: "I want to talk to a human."
+  Agent:  [tool_call: transfer_call] ← NEVER apologize or say you cannot connect them. Use the tool.`;
 }
 
 /**

@@ -14,7 +14,7 @@ const languageRegistry = [
     label: 'हिन्दी (Hindi)',
     text: true,
     stt: true,
-    tts: { provider: 'sarvam', voiceId: 'priya' },
+    tts: { provider: 'sarvam', voiceId: 'ritu' },
     script: 'Devanagari',
   },
   {

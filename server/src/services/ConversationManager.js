@@ -91,6 +91,7 @@ class ConversationManager extends EventEmitter {
       getStateManager: () => this.stateManager,
       getEligibilityFlow: () => this.eligibilityFlow,
       changeLanguageFn: this.changeLanguage.bind(this),
+      getChannelAdapter: () => this.channel,
     });
 
     this.userSpeechBuffer = "";
@@ -377,9 +378,8 @@ class ConversationManager extends EventEmitter {
       this.registry.injectDataCollectionTool(config.dataToCollect);
     }
 
-    if (channel !== "voice") {
-      this.registry.injectInternalCrmTools();
-    }
+    // Inject CRM/sales tools (including transfer_call) for all channels
+    this.registry.injectInternalCrmTools();
     this.registry.injectSchemeSearchTool();
     if (channel === "voice" || provider === "whatsapp") {
       this.registry.injectApplicationStepsTool({ channel });
