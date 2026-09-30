@@ -8,6 +8,7 @@ import { useFontScale } from "./hooks/useFontScale";
 import { Navbar } from "./components/layout/Navbar";
 import { Footer } from "./components/layout/Footer";
 import { ConnectionBadge } from "./components/layout/ConnectionBadge";
+import { BottomNav } from "./components/layout/BottomNav";
 
 import HomePage from "./pages/HomePage";
 import AdminLoginPage from "./pages/AdminLoginPage";
@@ -101,7 +102,7 @@ function AccessibilityControls() {
 
 function Layout({ children, hideFooter = false, hideTopBar = false }) {
   return (
-    <div className="min-h-screen flex flex-col bg-paper text-ink">
+    <div className="min-h-screen flex flex-col bg-paper text-ink pb-20 md:pb-0">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-forest focus:text-white focus:rounded-lg"
@@ -113,6 +114,7 @@ function Layout({ children, hideFooter = false, hideTopBar = false }) {
         {children}
       </main>
       {!hideFooter && <Footer />}
+      <BottomNav />
       <ConnectionBadge />
     </div>
   );

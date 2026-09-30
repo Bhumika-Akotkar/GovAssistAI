@@ -2,10 +2,13 @@ import { lazy, Suspense, useState, useEffect, useRef } from "react";
 import { useLanguage } from "../../i18n/LanguageProvider";
 import { Link } from "react-router-dom";
 import { getSupportedLanguages } from "../../i18n/languages";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Phone } from "lucide-react";
 
 const WhatsAppContactPage = lazy(
   () => import("../../pages/WhatsAppContactPage"),
+);
+const CallContactPage = lazy(
+  () => import("../../pages/CallContactPage"),
 );
 
 const HERO_CONTENT = {
@@ -127,7 +130,9 @@ export function Hero() {
   const [swapIndex, setSwapIndex] = useState(0);
   const [isOut, setIsOut] = useState(false);
   const [isWhatsAppOpen, setIsWhatsAppOpen] = useState(false);
+  const [isCallOpen, setIsCallOpen] = useState(false);
   const whatsappButtonRef = useRef(null);
+  const callButtonRef = useRef(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -148,7 +153,7 @@ export function Hero() {
     <section className="hero relative overflow-hidden bg-white px-6 pt-[72px] pb-[96px] md:px-0">
       <div className="relative z-[1] mx-auto grid max-w-[1280px] grid-cols-1 items-center gap-16 md:grid-cols-[1.02fr_.98fr] md:gap-[64px]">
         {/* ============ LEFT COLUMN ============ */}
-        <div>
+        <div className="flex flex-col items-center text-center px-4 md:items-start md:text-left md:px-0">
           {/* Eyebrow badge */}
           <div className="reveal inline-flex items-center gap-[10px] rounded-full border border-[#E6DFD0] bg-white py-[7px] pl-[10px] pr-4 text-[.8rem] font-medium text-[#6E665A] shadow-[0_1px_2px_rgba(22,19,15,.04)]">
             <span className="rounded-full bg-[#C65D3B] px-[9px] py-[3px] text-[.68rem] font-bold uppercase tracking-[.04em] text-white">
@@ -184,7 +189,7 @@ export function Hero() {
           </p>
 
           {/* CTA buttons */}
-          <div className="reveal reveal-d3 mb-11 flex flex-wrap gap-3">
+          <div className="reveal reveal-d3 mb-11 flex flex-wrap justify-center md:justify-start gap-3">
             <Link
               to="/voice"
               className="btn btn-primary inline-flex items-center justify-center gap-[9px] rounded-full bg-[#1B3A2C] px-[22px] py-3 text-[.92rem] font-semibold tracking-[-.01em] text-white shadow-[0_2px_10px_rgba(22,19,15,.05),0_1px_2px_rgba(22,19,15,.04)] transition-[transform,box-shadow,background] duration-200 ease-[cubic-bezier(.16,1,.3,1)] hover:-translate-y-px hover:bg-[#24523E] hover:shadow-[0_10px_30px_-10px_rgba(22,19,15,.14),0_2px_6px_rgba(22,19,15,.04)] active:scale-[.97]"
@@ -224,14 +229,28 @@ export function Hero() {
               />
               WhatsApp
             </button>
+            <button
+              ref={callButtonRef}
+              type="button"
+              aria-haspopup="dialog"
+              aria-expanded={isCallOpen}
+              onClick={() => setIsCallOpen(true)}
+              className="inline-flex items-center justify-center gap-[9px] rounded-full bg-[#E5E9EC] px-[22px] py-3 text-[.92rem] font-semibold tracking-[-.01em] text-[#1B3A2C] shadow-sm transition-[transform,box-shadow,background] duration-200 hover:-translate-y-px hover:bg-[#D4D9DE] hover:shadow-md active:scale-[.97]"
+            >
+              <Phone
+                className="h-[17px] w-[17px] shrink-0"
+                aria-hidden="true"
+              />
+              Call
+            </button>
           </div>
 
           {/* Language pills */}
-          <div className="reveal reveal-d4 border-t border-[#E6DFD0] pt-8">
+          <div className="reveal reveal-d4 border-t border-[#E6DFD0] pt-8 w-full">
             <p className="mb-3 text-[.85rem] text-[#6E665A]">
               Supported Languages:
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap justify-center md:justify-start gap-2">
               {langs.map((l) => {
                 const isActive = language.code === l.code;
                 return (
@@ -253,7 +272,7 @@ export function Hero() {
         </div>
 
         {/* ============ RIGHT COLUMN / HERO IMAGE ============ */}
-        <div className="hero-artifact flex w-full  max-w-[960px] items-center justify-self-center">
+        <div className="hero-artifact hidden md:flex w-full  max-w-[960px] items-center justify-self-center">
           <img
             src="/assets/heroimg/hero.png"
             alt="Sahayak Seva helping citizens access government services"
@@ -277,6 +296,25 @@ export function Hero() {
           <WhatsAppContactPage
             onClose={() => setIsWhatsAppOpen(false)}
             returnFocusRef={whatsappButtonRef}
+          />
+        </Suspense>
+      )}
+      {isCallOpen && (
+        <Suspense
+          fallback={
+            <div
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4"
+              role="status"
+            >
+              <span className="rounded-xl bg-white px-5 py-4 text-sm text-ink-2 shadow-xl">
+                Loading Call info…
+              </span>
+            </div>
+          }
+        >
+          <CallContactPage
+            onClose={() => setIsCallOpen(false)}
+            returnFocusRef={callButtonRef}
           />
         </Suspense>
       )}
