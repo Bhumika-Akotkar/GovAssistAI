@@ -553,7 +553,7 @@ export function SessionProvider({ children }) {
         recognition.onresult = (event) => {
           if (!recognitionRef.current) return;
           let interim = "";
-          for (let i = event.resultIndex; i < event.results.length; ++i) {
+          for (let i = 0; i < event.results.length; ++i) {
             interim += event.results[i][0].transcript;
           }
           if (interim) {
@@ -592,7 +592,7 @@ export function SessionProvider({ children }) {
       const source = vadCtx.createMediaStreamSource(stream);
       const analyser = vadCtx.createAnalyser();
       analyser.fftSize = 512;
-      analyser.minDecibels = -50;
+      analyser.minDecibels = -70;
       source.connect(analyser);
 
       const bufferLength = analyser.frequencyBinCount;
@@ -606,7 +606,7 @@ export function SessionProvider({ children }) {
         }
         const average = sum / bufferLength;
 
-        if (average > 15) {
+        if (average > 5) {
           lastAudioTime = Date.now();
           hasSpoken = true;
           if (lastReportedSilence > 0) {
